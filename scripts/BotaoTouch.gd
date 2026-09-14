@@ -18,8 +18,11 @@ extends Control
 ## Control — ótimo pra zonas grandes de toque, tipo mover esquerda/direita).
 @export var forma: String = "circulo"
 @export var raio: float = 80.0
-@export var opacidade_base: float = 0.13
-@export var opacidade_pressionado: float = 0.42
+@export var opacidade_base: float = 0.24
+@export var opacidade_pressionado: float = 0.55
+## Tinge o botão (ex.: laranja no tiro, pra destacar a ação principal — como
+## o botão de fogo colorido em jogos como Free Fire). Branco = neutro.
+@export var cor: Color = Color.WHITE
 
 var _pressionado: bool = false
 var _dedo: int = -1
@@ -35,32 +38,32 @@ func _draw() -> void:
 
 	if forma == "retangulo":
 		var retangulo := Rect2(Vector2.ZERO, size)
-		draw_rect(retangulo, Color(1, 1, 1, alpha_fundo))
-		draw_rect(retangulo, Color(1, 1, 1, alpha_fundo * 2.2 + 0.06), false, 2.0)
+		draw_rect(retangulo, Color(cor, alpha_fundo))
+		draw_rect(retangulo, Color(cor, alpha_fundo * 2.2 + 0.08), false, 3.0)
 		if icone != "":
 			_desenhar_icone(size * 0.5, minf(size.x, size.y) * 0.3, alpha_icone)
 	else:
 		var centro: Vector2 = size * 0.5
 		# Duas camadas (miolo + brilho externo suave) em vez de um preenchimento
 		# chapado — dá um leve efeito de profundidade sem pesar visualmente.
-		draw_circle(centro, raio, Color(1, 1, 1, alpha_fundo * 0.55))
-		draw_circle(centro, raio * 0.8, Color(1, 1, 1, alpha_fundo))
-		draw_arc(centro, raio, 0.0, TAU, 48, Color(1, 1, 1, alpha_fundo * 2.4 + 0.08), 2.5, true)
+		draw_circle(centro, raio, Color(cor, alpha_fundo * 0.55))
+		draw_circle(centro, raio * 0.8, Color(cor, alpha_fundo))
+		draw_arc(centro, raio, 0.0, TAU, 48, Color(cor, alpha_fundo * 2.4 + 0.1), 3.0, true)
 		if icone != "":
 			_desenhar_icone(centro, raio * 0.42, alpha_icone)
 
 
 func _desenhar_icone(centro: Vector2, t: float, alpha: float) -> void:
-	var cor := Color(1, 1, 1, alpha)
+	var cor_icone := Color(cor, alpha)
 	match icone:
 		"cima":
-			draw_colored_polygon(PackedVector2Array([centro + Vector2(0, -t), centro + Vector2(-t, t * 0.8), centro + Vector2(t, t * 0.8)]), cor)
+			draw_colored_polygon(PackedVector2Array([centro + Vector2(0, -t), centro + Vector2(-t, t * 0.8), centro + Vector2(t, t * 0.8)]), cor_icone)
 		"esquerda":
-			draw_colored_polygon(PackedVector2Array([centro + Vector2(-t, 0), centro + Vector2(t * 0.8, -t), centro + Vector2(t * 0.8, t)]), cor)
+			draw_colored_polygon(PackedVector2Array([centro + Vector2(-t, 0), centro + Vector2(t * 0.8, -t), centro + Vector2(t * 0.8, t)]), cor_icone)
 		"direita":
-			draw_colored_polygon(PackedVector2Array([centro + Vector2(t, 0), centro + Vector2(-t * 0.8, -t), centro + Vector2(-t * 0.8, t)]), cor)
+			draw_colored_polygon(PackedVector2Array([centro + Vector2(t, 0), centro + Vector2(-t * 0.8, -t), centro + Vector2(-t * 0.8, t)]), cor_icone)
 		"diamante":
-			draw_colored_polygon(PackedVector2Array([centro + Vector2(0, -t), centro + Vector2(t, 0), centro + Vector2(0, t), centro + Vector2(-t, 0)]), cor)
+			draw_colored_polygon(PackedVector2Array([centro + Vector2(0, -t), centro + Vector2(t, 0), centro + Vector2(0, t), centro + Vector2(-t, 0)]), cor_icone)
 		"raio":
 			draw_colored_polygon(PackedVector2Array([
 				centro + Vector2(t * 0.15, -t),
@@ -69,7 +72,7 @@ func _desenhar_icone(centro: Vector2, t: float, alpha: float) -> void:
 				centro + Vector2(-t * 0.15, t),
 				centro + Vector2(t * 0.55, -t * 0.12),
 				centro + Vector2(t * 0.05, -t * 0.12),
-			]), cor)
+			]), cor_icone)
 
 
 func _gui_input(event: InputEvent) -> void:
