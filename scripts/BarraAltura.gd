@@ -25,7 +25,7 @@ func atualizar_resgates(fracoes: Array) -> void:
 
 	for f in fracoes:
 		var m := Label.new()
-		m.text = "●"
+		m.text = "*"
 		m.add_theme_font_size_override("font_size", 20)
 		m.modulate = Color(1, 0.78, 0.25)
 		m.mouse_filter = MOUSE_FILTER_IGNORE

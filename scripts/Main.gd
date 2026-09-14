@@ -104,7 +104,7 @@ func _carregar_nivel() -> void:
 ## Sequência de dicas só na primeira fase — a dificuldade suavizada dá tempo
 ## de sobra pra ler cada uma sem morrer.
 func _tutorial_fase1() -> void:
-	hud.mostrar_aviso("Segure W (ou ▲) pra voar. Solte pra descer.")
+	hud.mostrar_aviso("Segure W (ou o botão de voar) pra voar. Solte pra descer.")
 	await get_tree().create_timer(3.2, false).timeout
 	if estado != Estado.JOGANDO:
 		return

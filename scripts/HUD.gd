@@ -22,13 +22,6 @@ signal sair_para_menu_pressionado()
 @onready var slider_musica_pausa: HSlider = $PainelPausa/Volumes/SliderMusica
 @onready var slider_efeitos_pausa: HSlider = $PainelPausa/Volumes/SliderEfeitos
 
-# Botões touch — cada um só liga/desliga a ação correspondente
-@onready var btn_esq: TouchScreenButton = $Controles/Esquerda
-@onready var btn_dir: TouchScreenButton = $Controles/Direita
-@onready var btn_voar: TouchScreenButton = $Controles/Voar
-@onready var btn_atirar: TouchScreenButton = $Controles/Atirar
-@onready var btn_bomba: TouchScreenButton = $Controles/Bomba
-
 
 func _ready() -> void:
 	painel_fim.visible = false
@@ -37,8 +30,9 @@ func _ready() -> void:
 	$PainelMenu/BotaoJogar.pressed.connect(func(): jogar_pressionado.emit())
 	$PainelPausa/BotaoContinuar.pressed.connect(func(): pausar_alternado.emit())
 	$PainelPausa/BotaoMenu.pressed.connect(func(): sair_para_menu_pressionado.emit())
-	# No desktop os controles touch atrapalham a visão
-	$Controles.visible = OS.has_feature("mobile") or OS.has_feature("web")
+	# Só mostra os botões touch em quem realmente tem tela sensível ao toque —
+	# no desktop (mesmo via navegador) eles só atrapalhariam a visão.
+	$Controles.visible = OS.has_feature("mobile") or DisplayServer.is_touchscreen_available()
 
 	for slider in [slider_musica, slider_musica_pausa]:
 		slider.value = AudioManager.volume_musica()
@@ -70,7 +64,7 @@ func atualizar_nivel(v: int) -> void:
 	lbl_nivel.text = "TORRE %02d" % v
 
 func atualizar_vidas(v: int) -> void:
-	lbl_vidas.text = "LIVES  " + "▲".repeat(maxi(0, v))
+	lbl_vidas.text = "LIVES  " + "^".repeat(maxi(0, v))
 
 func atualizar_resgates(feitos: int, total: int) -> void:
 	lbl_resgates.text = "RESGATES %d/%d" % [feitos, total]
@@ -82,7 +76,7 @@ func atualizar_energia(v: float) -> void:
 		estilo.bg_color = Color(0.9, 0.2, 0.15) if v < 25.0 else Color(0.95, 0.72, 0.15)
 
 func atualizar_bombas(v: int) -> void:
-	lbl_bombas.text = "BOMBAS " + "◆".repeat(maxi(0, v))
+	lbl_bombas.text = "BOMBAS " + "*".repeat(maxi(0, v))
 
 
 func configurar_barra_altura(fracoes_resgates: Array) -> void:

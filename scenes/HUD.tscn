@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/HUD.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/BarraAltura.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/BotaoTouch.gd" id="3"]
 
 [sub_resource type="StyleBoxFlat" id="estilo_fundo_barra"]
 bg_color = Color(0.05, 0.05, 0.07, 0.8)
@@ -65,7 +66,7 @@ offset_right = -30.0
 offset_bottom = 70.0
 horizontal_alignment = 2
 theme_override_font_sizes/font_size = 30
-text = "LIVES  ▲▲▲▲▲"
+text = "LIVES  ^^^^^"
 
 [node name="Resgates" type="Label" parent="Topo"]
 anchors_preset = 1
@@ -100,13 +101,13 @@ theme_override_styles/panel = SubResource("estilo_fundo_barra")
 
 [node name="Jogador" type="Label" parent="BarraAltura"]
 theme_override_font_sizes/font_size = 30
-text = "◀"
+text = "<"
 modulate = Color(0.4, 0.85, 1, 1)
 mouse_filter = 2
 
 [node name="Helicoptero" type="Label" parent="BarraAltura"]
 theme_override_font_sizes/font_size = 22
-text = "▲"
+text = "^"
 modulate = Color(0.55, 0.55, 0.6, 1)
 mouse_filter = 2
 
@@ -138,29 +139,78 @@ offset_top = 56.0
 offset_right = 600.0
 offset_bottom = 94.0
 theme_override_font_sizes/font_size = 26
-text = "BOMBAS ◆◆◆◆◆◆"
+text = "BOMBAS ******"
 
-[node name="Controles" type="Node2D" parent="."]
+[node name="Controles" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
 
-[node name="Esquerda" type="TouchScreenButton" parent="Controles"]
-position = Vector2(90, 1560)
-action = "mover_esquerda"
+[node name="Esquerda" type="Control" parent="Controles"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = -210.0
+offset_right = 190.0
+offset_bottom = -60.0
+script = ExtResource("3")
+acao = "mover_esquerda"
+icone = "esquerda"
+raio = 75.0
 
-[node name="Direita" type="TouchScreenButton" parent="Controles"]
-position = Vector2(330, 1560)
-action = "mover_direita"
+[node name="Direita" type="Control" parent="Controles"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 210.0
+offset_top = -210.0
+offset_right = 360.0
+offset_bottom = -60.0
+script = ExtResource("3")
+acao = "mover_direita"
+icone = "direita"
+raio = 75.0
 
-[node name="Voar" type="TouchScreenButton" parent="Controles"]
-position = Vector2(210, 1400)
-action = "propulsar"
+[node name="Voar" type="Control" parent="Controles"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 115.0
+offset_top = -410.0
+offset_right = 285.0
+offset_bottom = -240.0
+script = ExtResource("3")
+acao = "propulsar"
+icone = "cima"
+raio = 85.0
 
-[node name="Atirar" type="TouchScreenButton" parent="Controles"]
-position = Vector2(790, 1440)
-action = "atirar"
+[node name="Atirar" type="Control" parent="Controles"]
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -240.0
+offset_top = -250.0
+offset_right = -50.0
+offset_bottom = -60.0
+script = ExtResource("3")
+acao = "atirar"
+rotulo = "TIRO"
+raio = 95.0
+tamanho_fonte = 34
 
-[node name="Bomba" type="TouchScreenButton" parent="Controles"]
-position = Vector2(820, 1640)
-action = "bomba"
+[node name="Bomba" type="Control" parent="Controles"]
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -330.0
+offset_top = -400.0
+offset_right = -190.0
+offset_bottom = -260.0
+script = ExtResource("3")
+acao = "bomba"
+icone = "diamante"
+raio = 70.0
 
 [node name="FlashDano" type="ColorRect" parent="."]
 anchors_preset = 15
@@ -225,7 +275,7 @@ theme_override_font_sizes/font_size = 30
 text = "Voe pelas torres de contêineres,
 resgate todos e chegue ao helicóptero.
 
-VOAR: W / ▲     MOVER: A D / ◀ ▶
+VOAR: W / ^     MOVER: A D / < >
 LASER: ESPAÇO     BOMBA: B"
 
 [node name="BotaoJogar" type="Button" parent="PainelMenu"]
