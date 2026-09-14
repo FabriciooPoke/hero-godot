@@ -2,9 +2,9 @@
 .godot/
 *.translation
 
-# Builds de export
+# Builds de export (gerados — export_presets.cfg fica versionado)
 export/
-export_presets.cfg
+build/
 
 # Sistema
 .DS_Store
