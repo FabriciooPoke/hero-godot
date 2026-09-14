@@ -11,6 +11,7 @@ var pontos: int = 0
 var vidas: int
 var resgates_coletados: int = 0
 var pausado: bool = false
+var _audio_desbloqueado: bool = false
 
 @onready var gerador: Node3D = $GeradorNivel
 @onready var jogador: CharacterBody3D = $Jogador
@@ -39,6 +40,18 @@ func _ready() -> void:
 	hud.sair_para_menu_pressionado.connect(_sair_para_menu)
 	hud.mostrar_menu()
 	AudioManager.tocar_musica()
+
+
+## Navegadores bloqueiam áudio que tenta tocar antes de qualquer interação
+## do usuário (política padrão de autoplay). O _ready() já tenta tocar a
+## música, mas no navegador isso fica mudo até aqui — no primeiro clique,
+## toque ou tecla, tenta de novo, e dessa vez conta como gesto do usuário.
+func _input(event: InputEvent) -> void:
+	if _audio_desbloqueado:
+		return
+	if event is InputEventMouseButton or event is InputEventScreenTouch or event is InputEventKey:
+		_audio_desbloqueado = true
+		AudioManager.tocar_musica()
 
 
 ## Escape alterna pausa — só faz sentido durante o jogo (ou pra sair dela).
