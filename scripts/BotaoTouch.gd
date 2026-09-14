@@ -1,17 +1,25 @@
 extends Control
-## Botão touch redondo desenhado em código (sem depender de textura externa)
-## — no toque, dispara Input.action_press/release na ação configurada, como
-## se fosse um botão físico do teclado. Funciona com toque e com mouse (pra
+## Botão touch desenhado em código (sem depender de textura externa) — no
+## toque, dispara Input.action_press/release na ação configurada, como se
+## fosse um botão físico do teclado. Funciona com toque e com mouse (pra
 ## testar direto no navegador desktop também).
+##
+## Visual "marca d'água": quase invisível em repouso (não tampa a visão do
+## jogo) e acende só quando pressionado — o padrão usado em jogos mobile
+## como Fortnite Mobile e PUBG Mobile. A área de toque continua grande e
+## reage no primeiro contato, sem precisar arrastar nem mirar com precisão.
 
 @export var acao: String = ""
 ## Ícone vetorial (não depende de fonte — evita "tofu" no export Web, que
-## não empacota os símbolos ▲◀▶◆ do editor): "cima", "esquerda", "direita"
-## ou "diamante". Deixe vazio e use `rotulo` pra texto normal (ex.: "TIRO").
+## não empacota os símbolos ▲◀▶◆ do editor): "cima", "esquerda", "direita",
+## "diamante" ou "raio".
 @export var icone: String = ""
-@export var rotulo: String = ""
+## "circulo" (usa `raio`, centrado) ou "retangulo" (usa o tamanho todo do
+## Control — ótimo pra zonas grandes de toque, tipo mover esquerda/direita).
+@export var forma: String = "circulo"
 @export var raio: float = 80.0
-@export var tamanho_fonte: int = 48
+@export var opacidade_base: float = 0.13
+@export var opacidade_pressionado: float = 0.42
 
 var _pressionado: bool = false
 var _dedo: int = -1
@@ -22,21 +30,28 @@ func _ready() -> void:
 
 
 func _draw() -> void:
-	var centro: Vector2 = size * 0.5
-	var cor_fundo: Color = Color(1, 1, 1, 0.38) if _pressionado else Color(1, 1, 1, 0.2)
-	draw_circle(centro, raio, cor_fundo)
-	draw_arc(centro, raio, 0.0, TAU, 48, Color(1, 1, 1, 0.55), 3.0, true)
-	if icone != "":
-		_desenhar_icone(centro)
-	elif rotulo != "":
-		var fonte: Font = ThemeDB.fallback_font
-		var tam: Vector2 = fonte.get_string_size(rotulo, HORIZONTAL_ALIGNMENT_CENTER, -1, tamanho_fonte)
-		draw_string(fonte, centro - tam * 0.5 + Vector2(0, tam.y * 0.35), rotulo, HORIZONTAL_ALIGNMENT_CENTER, -1, tamanho_fonte, Color(1, 1, 1, 0.92))
+	var alpha_fundo: float = opacidade_pressionado if _pressionado else opacidade_base
+	var alpha_icone: float = 0.9 if _pressionado else 0.6
+
+	if forma == "retangulo":
+		var retangulo := Rect2(Vector2.ZERO, size)
+		draw_rect(retangulo, Color(1, 1, 1, alpha_fundo))
+		draw_rect(retangulo, Color(1, 1, 1, alpha_fundo * 2.2 + 0.06), false, 2.0)
+		if icone != "":
+			_desenhar_icone(size * 0.5, minf(size.x, size.y) * 0.3, alpha_icone)
+	else:
+		var centro: Vector2 = size * 0.5
+		# Duas camadas (miolo + brilho externo suave) em vez de um preenchimento
+		# chapado — dá um leve efeito de profundidade sem pesar visualmente.
+		draw_circle(centro, raio, Color(1, 1, 1, alpha_fundo * 0.55))
+		draw_circle(centro, raio * 0.8, Color(1, 1, 1, alpha_fundo))
+		draw_arc(centro, raio, 0.0, TAU, 48, Color(1, 1, 1, alpha_fundo * 2.4 + 0.08), 2.5, true)
+		if icone != "":
+			_desenhar_icone(centro, raio * 0.42, alpha_icone)
 
 
-func _desenhar_icone(centro: Vector2) -> void:
-	var t: float = raio * 0.42
-	var cor := Color(1, 1, 1, 0.92)
+func _desenhar_icone(centro: Vector2, t: float, alpha: float) -> void:
+	var cor := Color(1, 1, 1, alpha)
 	match icone:
 		"cima":
 			draw_colored_polygon(PackedVector2Array([centro + Vector2(0, -t), centro + Vector2(-t, t * 0.8), centro + Vector2(t, t * 0.8)]), cor)
@@ -46,6 +61,15 @@ func _desenhar_icone(centro: Vector2) -> void:
 			draw_colored_polygon(PackedVector2Array([centro + Vector2(t, 0), centro + Vector2(-t * 0.8, -t), centro + Vector2(-t * 0.8, t)]), cor)
 		"diamante":
 			draw_colored_polygon(PackedVector2Array([centro + Vector2(0, -t), centro + Vector2(t, 0), centro + Vector2(0, t), centro + Vector2(-t, 0)]), cor)
+		"raio":
+			draw_colored_polygon(PackedVector2Array([
+				centro + Vector2(t * 0.15, -t),
+				centro + Vector2(-t * 0.55, t * 0.12),
+				centro + Vector2(-t * 0.05, t * 0.12),
+				centro + Vector2(-t * 0.15, t),
+				centro + Vector2(t * 0.55, -t * 0.12),
+				centro + Vector2(t * 0.05, -t * 0.12),
+			]), cor)
 
 
 func _gui_input(event: InputEvent) -> void:
