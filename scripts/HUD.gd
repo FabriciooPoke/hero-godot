@@ -91,12 +91,38 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+## Painéis apareciam/somem no corte, sem transição nenhuma — esses dois
+## helpers dão um fade + leve "pop" de escala (mesma linguagem em todo
+## painel do jogo: menu, pausa, fim de fase).
+func _revelar(painel: Control) -> void:
+	painel.pivot_offset = painel.size * 0.5
+	painel.visible = true
+	painel.modulate.a = 0.0
+	painel.scale = Vector2(0.94, 0.94)
+	var t := create_tween()
+	t.set_parallel(true)
+	t.tween_property(painel, "modulate:a", 1.0, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	t.tween_property(painel, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _ocultar(painel: Control, callback: Callable = Callable()) -> void:
+	var t := create_tween()
+	t.tween_property(painel, "modulate:a", 0.0, 0.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	t.tween_callback(func():
+		painel.visible = false
+		painel.modulate.a = 1.0
+		painel.scale = Vector2.ONE
+		if callback.is_valid():
+			callback.call()
+	)
+
+
 func mostrar_menu() -> void:
-	painel_menu.visible = true
+	_revelar(painel_menu)
 	painel_fim.visible = false
 
 func esconder_menu() -> void:
-	painel_menu.visible = false
+	_ocultar(painel_menu)
 	painel_fim.visible = false
 
 
@@ -132,7 +158,10 @@ func atualizar_barra_altura(fracao_jogador: float, fracao_helicoptero: float, li
 
 
 func mostrar_pausa(mostrar: bool) -> void:
-	painel_pausa.visible = mostrar
+	if mostrar:
+		_revelar(painel_pausa)
+	else:
+		_ocultar(painel_pausa)
 
 
 func mostrar_dano() -> void:
@@ -150,24 +179,22 @@ func mostrar_aviso(texto: String) -> void:
 
 
 func mostrar_nivel_completo(bonus: int, total: int, ao_continuar: Callable) -> void:
-	painel_fim.visible = true
+	_revelar(painel_fim)
 	$PainelFim/Titulo.text = "EXTRAÇÃO COMPLETA"
 	$PainelFim/Detalhe.text = "Bônus: +%d\nTotal: %d" % [bonus, total]
 	$PainelFim/BotaoAcao.text = "PRÓXIMA TORRE"
 	_religar_botao($PainelFim/BotaoAcao, func():
-		painel_fim.visible = false
-		ao_continuar.call()
+		_ocultar(painel_fim, ao_continuar)
 	)
 
 
 func mostrar_fim(pontos: int, nivel: int, ao_reiniciar: Callable) -> void:
-	painel_fim.visible = true
+	_revelar(painel_fim)
 	$PainelFim/Titulo.text = "FIM DE JOGO"
 	$PainelFim/Detalhe.text = "Pontos: %d\nTorre: %d" % [pontos, nivel]
 	$PainelFim/BotaoAcao.text = "JOGAR DE NOVO"
 	_religar_botao($PainelFim/BotaoAcao, func():
-		painel_fim.visible = false
-		ao_reiniciar.call()
+		_ocultar(painel_fim, ao_reiniciar)
 	)
 
 
