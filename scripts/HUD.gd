@@ -22,6 +22,17 @@ signal sair_para_menu_pressionado()
 @onready var slider_musica_pausa: HSlider = $PainelPausa/Volumes/SliderMusica
 @onready var slider_efeitos_pausa: HSlider = $PainelPausa/Volumes/SliderEfeitos
 
+## Godot "canvas_items + expand" mantém 1 unidade de canvas = 1px físico só
+## no eixo que está "espremido" contra o tamanho base (1080x1920) — o outro
+## eixo "sobra". Em retrato quem aperta é a largura (unidade ≈ 1080); em
+## paisagem quem aperta é a altura (unidade ≈ 1920, só que física bem menor).
+## Resultado: um raio fixo em unidades de canvas fica ~45% menor na tela em
+## paisagem. Por isso os botões são posicionados/dimensionados nas cenas
+## pensando numa "unidade curta" de referência (1080, o valor base do
+## projeto) e reescalados aqui sempre que o viewport muda de proporção.
+const UNIDADE_BASE := 1080.0
+var _controles_base: Array = []
+
 
 func _ready() -> void:
 	painel_fim.visible = false
@@ -32,7 +43,10 @@ func _ready() -> void:
 	$PainelPausa/BotaoMenu.pressed.connect(func(): sair_para_menu_pressionado.emit())
 	# Só mostra os botões touch em quem realmente tem tela sensível ao toque —
 	# no desktop (mesmo via navegador) eles só atrapalhariam a visão.
-	$Controles.visible = OS.has_feature("mobile") or DisplayServer.is_touchscreen_available()
+	var em_touch: bool = OS.has_feature("mobile") or DisplayServer.is_touchscreen_available()
+	$Controles.visible = em_touch
+	if em_touch:
+		_preparar_controles_responsivos()
 
 	for slider in [slider_musica, slider_musica_pausa]:
 		slider.value = AudioManager.volume_musica()
@@ -40,6 +54,35 @@ func _ready() -> void:
 	for slider in [slider_efeitos, slider_efeitos_pausa]:
 		slider.value = AudioManager.volume_efeitos()
 		slider.value_changed.connect(AudioManager.definir_volume_efeitos)
+
+
+## Guarda o tamanho/posição "desenhados" na cena (pensados pra retrato) de
+## cada botão, e reescala tudo pela unidade curta atual sempre que o
+## viewport mudar — inclusive na primeira vez, pro caso de já abrir
+## paisagem.
+func _preparar_controles_responsivos() -> void:
+	for no in [$Controles/Esquerda, $Controles/Direita, $Controles/Voar, $Controles/Atirar, $Controles/Bomba]:
+		_controles_base.append({
+			"no": no,
+			"raio": no.raio,
+			"l": no.offset_left, "t": no.offset_top, "r": no.offset_right, "b": no.offset_bottom,
+		})
+	get_viewport().size_changed.connect(_redimensionar_controles)
+	_redimensionar_controles()
+
+
+func _redimensionar_controles() -> void:
+	var vp: Vector2 = get_viewport().get_visible_rect().size
+	var unidade: float = minf(vp.x, vp.y)
+	var fator: float = unidade / UNIDADE_BASE
+	for c in _controles_base:
+		var no: Control = c.no
+		no.raio = c.raio * fator
+		no.offset_left = c.l * fator
+		no.offset_top = c.t * fator
+		no.offset_right = c.r * fator
+		no.offset_bottom = c.b * fator
+		no.queue_redraw()
 
 
 func _unhandled_input(event: InputEvent) -> void:
