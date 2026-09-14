@@ -101,13 +101,13 @@ func esconder_menu() -> void:
 
 
 func atualizar_pontos(v: int) -> void:
-	lbl_pontos.text = "SCORE\n%06d" % v
+	lbl_pontos.text = "PONTOS\n%06d" % v
 
 func atualizar_nivel(v: int) -> void:
 	lbl_nivel.text = "TORRE %02d" % v
 
 func atualizar_vidas(v: int) -> void:
-	lbl_vidas.text = "LIVES  " + "^".repeat(maxi(0, v))
+	lbl_vidas.text = "VIDAS  " + "^".repeat(maxi(0, v))
 
 func atualizar_resgates(feitos: int, total: int) -> void:
 	lbl_resgates.text = "RESGATES %d/%d" % [feitos, total]
