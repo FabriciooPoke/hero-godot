@@ -31,6 +31,7 @@ var _player_musica: AudioStreamPlayer
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	var buses_novos := _garantir_buses()
 	if buses_novos:
 		definir_volume_musica(0.6)

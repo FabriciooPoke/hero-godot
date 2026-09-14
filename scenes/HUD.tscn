@@ -23,6 +23,7 @@ corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
 
 [node name="HUD" type="Control"]
+process_mode = 3
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -340,3 +341,98 @@ offset_right = 240.0
 offset_bottom = 260.0
 theme_override_font_sizes/font_size = 38
 text = "JOGAR DE NOVO"
+
+[node name="PainelPausa" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+visible = false
+
+[node name="Fundo" type="ColorRect" parent="PainelPausa"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.02, 0.02, 0.05, 0.88)
+
+[node name="Titulo" type="Label" parent="PainelPausa"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -260.0
+offset_right = 300.0
+offset_bottom = -180.0
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 56
+text = "PAUSADO"
+
+[node name="Volumes" type="Control" parent="PainelPausa"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -130.0
+offset_right = 220.0
+offset_bottom = -30.0
+
+[node name="LabelMusica" type="Label" parent="PainelPausa/Volumes"]
+offset_right = 440.0
+offset_bottom = 30.0
+theme_override_font_sizes/font_size = 20
+text = "MÚSICA"
+
+[node name="SliderMusica" type="HSlider" parent="PainelPausa/Volumes"]
+offset_top = 32.0
+offset_right = 440.0
+offset_bottom = 52.0
+min_value = 0.0
+max_value = 1.0
+step = 0.05
+value = 0.6
+
+[node name="LabelEfeitos" type="Label" parent="PainelPausa/Volumes"]
+offset_top = 58.0
+offset_right = 440.0
+offset_bottom = 88.0
+theme_override_font_sizes/font_size = 20
+text = "EFEITOS"
+
+[node name="SliderEfeitos" type="HSlider" parent="PainelPausa/Volumes"]
+offset_top = 90.0
+offset_right = 440.0
+offset_bottom = 110.0
+min_value = 0.0
+max_value = 1.0
+step = 0.05
+value = 0.8
+
+[node name="BotaoContinuar" type="Button" parent="PainelPausa"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = 40.0
+offset_right = 200.0
+offset_bottom = 110.0
+theme_override_font_sizes/font_size = 32
+text = "CONTINUAR"
+
+[node name="BotaoMenu" type="Button" parent="PainelPausa"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = 130.0
+offset_right = 200.0
+offset_bottom = 200.0
+theme_override_font_sizes/font_size = 28
+text = "MENU PRINCIPAL"

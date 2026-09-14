@@ -2,6 +2,8 @@ extends Control
 ## HUD: pontuação, energia, bombas e os controles touch pro celular.
 
 signal jogar_pressionado()
+signal pausar_alternado()
+signal sair_para_menu_pressionado()
 
 @onready var lbl_pontos: Label = $Topo/Pontos
 @onready var lbl_nivel: Label = $Topo/Nivel
@@ -14,8 +16,11 @@ signal jogar_pressionado()
 @onready var lbl_aviso: Label = $Aviso
 @onready var barra_altura: Control = $BarraAltura
 @onready var flash_dano: ColorRect = $FlashDano
+@onready var painel_pausa: Control = $PainelPausa
 @onready var slider_musica: HSlider = $PainelMenu/Volumes/SliderMusica
 @onready var slider_efeitos: HSlider = $PainelMenu/Volumes/SliderEfeitos
+@onready var slider_musica_pausa: HSlider = $PainelPausa/Volumes/SliderMusica
+@onready var slider_efeitos_pausa: HSlider = $PainelPausa/Volumes/SliderEfeitos
 
 # Botões touch — cada um só liga/desliga a ação correspondente
 @onready var btn_esq: TouchScreenButton = $Controles/Esquerda
@@ -27,15 +32,26 @@ signal jogar_pressionado()
 
 func _ready() -> void:
 	painel_fim.visible = false
+	painel_pausa.visible = false
 	lbl_aviso.visible = false
 	$PainelMenu/BotaoJogar.pressed.connect(func(): jogar_pressionado.emit())
+	$PainelPausa/BotaoContinuar.pressed.connect(func(): pausar_alternado.emit())
+	$PainelPausa/BotaoMenu.pressed.connect(func(): sair_para_menu_pressionado.emit())
 	# No desktop os controles touch atrapalham a visão
 	$Controles.visible = OS.has_feature("mobile") or OS.has_feature("web")
 
-	slider_musica.value = AudioManager.volume_musica()
-	slider_efeitos.value = AudioManager.volume_efeitos()
-	slider_musica.value_changed.connect(AudioManager.definir_volume_musica)
-	slider_efeitos.value_changed.connect(AudioManager.definir_volume_efeitos)
+	for slider in [slider_musica, slider_musica_pausa]:
+		slider.value = AudioManager.volume_musica()
+		slider.value_changed.connect(AudioManager.definir_volume_musica)
+	for slider in [slider_efeitos, slider_efeitos_pausa]:
+		slider.value = AudioManager.volume_efeitos()
+		slider.value_changed.connect(AudioManager.definir_volume_efeitos)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("pausar"):
+		pausar_alternado.emit()
+		get_viewport().set_input_as_handled()
 
 
 func mostrar_menu() -> void:
@@ -76,6 +92,10 @@ func configurar_barra_altura(fracoes_resgates: Array) -> void:
 func atualizar_barra_altura(fracao_jogador: float, fracao_helicoptero: float, liberado: bool) -> void:
 	barra_altura.atualizar_jogador(fracao_jogador)
 	barra_altura.atualizar_helicoptero(fracao_helicoptero, liberado)
+
+
+func mostrar_pausa(mostrar: bool) -> void:
+	painel_pausa.visible = mostrar
 
 
 func mostrar_dano() -> void:

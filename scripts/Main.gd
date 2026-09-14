@@ -10,6 +10,7 @@ var nivel: int = 1
 var pontos: int = 0
 var vidas: int
 var resgates_coletados: int = 0
+var pausado: bool = false
 
 @onready var gerador: Node3D = $GeradorNivel
 @onready var jogador: CharacterBody3D = $Jogador
@@ -33,8 +34,28 @@ func _ready() -> void:
 	jogador.energia_mudou.connect(hud.atualizar_energia)
 	jogador.bombas_mudou.connect(hud.atualizar_bombas)
 	hud.jogar_pressionado.connect(iniciar_jogo)
+	hud.pausar_alternado.connect(_alternar_pausa)
+	hud.sair_para_menu_pressionado.connect(_sair_para_menu)
 	hud.mostrar_menu()
 	AudioManager.tocar_musica()
+
+
+## Escape alterna pausa — só faz sentido durante o jogo (ou pra sair dela).
+func _alternar_pausa() -> void:
+	if estado != Estado.JOGANDO and not pausado:
+		return
+	pausado = not pausado
+	get_tree().paused = pausado
+	hud.mostrar_pausa(pausado)
+
+
+func _sair_para_menu() -> void:
+	pausado = false
+	get_tree().paused = false
+	hud.mostrar_pausa(false)
+	estado = Estado.MENU
+	hud.esconder_menu()
+	hud.mostrar_menu()
 
 
 func iniciar_jogo() -> void:
@@ -70,15 +91,15 @@ func _carregar_nivel() -> void:
 ## de sobra pra ler cada uma sem morrer.
 func _tutorial_fase1() -> void:
 	hud.mostrar_aviso("Segure W (ou ▲) pra voar. Solte pra descer.")
-	await get_tree().create_timer(3.2).timeout
+	await get_tree().create_timer(3.2, false).timeout
 	if estado != Estado.JOGANDO:
 		return
 	hud.mostrar_aviso("A energia drena com o tempo — de olho na barra amarela.")
-	await get_tree().create_timer(3.2).timeout
+	await get_tree().create_timer(3.2, false).timeout
 	if estado != Estado.JOGANDO:
 		return
 	hud.mostrar_aviso("Resgate as %d pessoas (pontos amarelos na barra à direita)." % gerador.total_resgates)
-	await get_tree().create_timer(3.2).timeout
+	await get_tree().create_timer(3.2, false).timeout
 	if estado != Estado.JOGANDO:
 		return
 	hud.mostrar_aviso("Depois suba até o helicóptero pra completar a fase.")
@@ -134,6 +155,6 @@ func _ao_morrer() -> void:
 		hud.mostrar_fim(pontos, nivel, iniciar_jogo)
 		return
 
-	await get_tree().create_timer(1.2).timeout
+	await get_tree().create_timer(1.2, false).timeout
 	jogador.reviver(gerador.pos_inicial)
 	estado = Estado.JOGANDO
