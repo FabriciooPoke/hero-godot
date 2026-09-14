@@ -34,6 +34,7 @@ func _ready() -> void:
 	jogador.bombas_mudou.connect(hud.atualizar_bombas)
 	hud.jogar_pressionado.connect(iniciar_jogo)
 	hud.mostrar_menu()
+	AudioManager.tocar_musica()
 
 
 func iniciar_jogo() -> void:

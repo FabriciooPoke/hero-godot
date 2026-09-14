@@ -54,6 +54,7 @@ var resgates: int = 0
 var _materiais_originais: Array[Material] = []
 
 const CENA_BOMBA := preload("res://scenes/Bomba.tscn")
+const CENA_FAISCA := preload("res://scenes/efeitos/EfeitoFaisca.tscn")
 const MAT_FLASH_DANO := preload("res://resources/materiais/flash_dano.tres")
 
 
@@ -160,8 +161,15 @@ func disparar_laser() -> void:
 
 	if raio_laser.is_colliding():
 		var alvo := raio_laser.get_collider()
+		_criar_faisca(raio_laser.get_collision_point())
 		if alvo.has_method("levar_dano_laser"):
 			alvo.levar_dano_laser()
+
+
+func _criar_faisca(pos: Vector3) -> void:
+	var efeito := CENA_FAISCA.instantiate()
+	get_tree().current_scene.add_child(efeito)
+	efeito.global_position = pos
 
 
 func _piscar_laser() -> void:
@@ -190,6 +198,15 @@ func coletar_resgate() -> void:
 func recarregar_energia(valor: float) -> void:
 	energia = minf(energia_max, energia + valor)
 	energia_mudou.emit(energia)
+
+
+## Custo direto de energia (ex: destruir contêiner com bomba) — força bruta
+## tem preço, reforça a decisão de rota em vez de "explodir tudo de graça".
+func gastar_energia(valor: float) -> void:
+	energia = maxf(0.0, energia - valor)
+	energia_mudou.emit(energia)
+	if energia <= 0.0:
+		levar_dano()
 
 
 func levar_dano() -> void:

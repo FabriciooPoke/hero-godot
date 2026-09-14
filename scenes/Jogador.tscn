@@ -59,7 +59,7 @@ emission_enabled = true
 emission = Color(1, 0.5, 0.2, 1)
 emission_energy_multiplier = 4.0
 
-[node name="Jogador" type="CharacterBody3D"]
+[node name="Jogador" type="CharacterBody3D" groups=["jogador"]]
 collision_layer = 1
 collision_mask = 2
 script = ExtResource("1")

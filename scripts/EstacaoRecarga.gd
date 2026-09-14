@@ -16,9 +16,11 @@ const COR_ESGOTADA := Color(0.3, 0.3, 0.35, 1)
 var carga_restante: float
 var _jogador_dentro: Node3D = null
 var _tempo_esgotada: float = 0.0
+var _tempo_desde_som: float = 0.0
 
 @onready var malha: MeshInstance3D = $Malha
 @onready var luz: OmniLight3D = $Luz
+@onready var particulas: GPUParticles3D = $Particulas
 
 
 func _ready() -> void:
@@ -41,12 +43,19 @@ func _process(delta: float) -> void:
 	if mat:
 		mat.emission_energy_multiplier = 0.4 + 3.0 * proporcao
 
+	particulas.emitting = _jogador_dentro != null and carga_restante > 0.0
+
 	if _jogador_dentro == null or carga_restante <= 0.0:
 		return
 
 	var transferir: float = minf(taxa * delta, carga_restante)
 	_jogador_dentro.recarregar_energia(transferir)
 	carga_restante -= transferir
+
+	_tempo_desde_som += delta
+	if _tempo_desde_som >= 0.15:
+		_tempo_desde_som = 0.0
+		AudioManager.tocar("recarregando", -4.0)
 
 	if carga_restante <= 0.0:
 		_tempo_esgotada = 0.0

@@ -5,6 +5,9 @@ extends Area3D
 
 @export var tempo_ate_explodir: float = 1.6
 @export var raio: float = 8.0
+@export var custo_energia_por_bloco: float = 3.0
+
+const EFEITO_EXPLOSAO := preload("res://scenes/efeitos/EfeitoExplosao.tscn")
 
 var _tempo: float = 0.0
 var _detonada: bool = false
@@ -27,6 +30,13 @@ func explodir() -> void:
 		return
 	_detonada = true
 	AudioManager.tocar("explosao")
+	_criar_efeito_visual()
+
+	var camera = get_tree().get_first_node_in_group("camera")
+	if camera:
+		camera.tremer(0.7)
+
+	var jogador = get_tree().get_first_node_in_group("jogador")
 
 	var espaco := get_world_3d().direct_space_state
 	var consulta := PhysicsShapeQueryParameters3D.new()
@@ -42,8 +52,16 @@ func explodir() -> void:
 		var alvo = res.collider
 		if alvo.has_method("destruir"):
 			alvo.destruir()
+			# custo só se aplica a contêiner (StaticBody3D) — não a drone (Area3D)
+			if alvo is StaticBody3D and jogador and jogador.has_method("gastar_energia"):
+				jogador.gastar_energia(custo_energia_por_bloco)
 		elif alvo.has_method("levar_dano"):
 			alvo.levar_dano()
 
-	# Ponto de extensão: partículas + shake de câmera + som
 	queue_free()
+
+
+func _criar_efeito_visual() -> void:
+	var efeito := EFEITO_EXPLOSAO.instantiate()
+	get_tree().current_scene.add_child(efeito)
+	efeito.global_position = global_position

@@ -14,6 +14,8 @@ signal jogar_pressionado()
 @onready var lbl_aviso: Label = $Aviso
 @onready var barra_altura: Control = $BarraAltura
 @onready var flash_dano: ColorRect = $FlashDano
+@onready var slider_musica: HSlider = $PainelMenu/Volumes/SliderMusica
+@onready var slider_efeitos: HSlider = $PainelMenu/Volumes/SliderEfeitos
 
 # Botões touch — cada um só liga/desliga a ação correspondente
 @onready var btn_esq: TouchScreenButton = $Controles/Esquerda
@@ -29,6 +31,11 @@ func _ready() -> void:
 	$PainelMenu/BotaoJogar.pressed.connect(func(): jogar_pressionado.emit())
 	# No desktop os controles touch atrapalham a visão
 	$Controles.visible = OS.has_feature("mobile") or OS.has_feature("web")
+
+	slider_musica.value = AudioManager.volume_musica()
+	slider_efeitos.value = AudioManager.volume_efeitos()
+	slider_musica.value_changed.connect(AudioManager.definir_volume_musica)
+	slider_efeitos.value_changed.connect(AudioManager.definir_volume_efeitos)
 
 
 func mostrar_menu() -> void:

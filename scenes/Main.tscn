@@ -19,7 +19,7 @@ script = ExtResource("2")
 [node name="Jogador" parent="." instance=ExtResource("3")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
 
-[node name="CameraJogo" type="Camera3D" parent="."]
+[node name="CameraJogo" type="Camera3D" parent="." groups=["camera"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 26)
 fov = 60.0
 script = ExtResource("5")
