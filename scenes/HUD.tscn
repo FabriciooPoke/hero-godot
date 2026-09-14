@@ -1,9 +1,10 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/HUD.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/BarraAltura.gd" id="2"]
 [ext_resource type="Script" path="res://scripts/BotaoTouch.gd" id="3"]
 [ext_resource type="Texture2D" uid="uid://de8q7mhxia4js" path="res://assets/imagens/tela_abertura.png" id="4"]
+[ext_resource type="Script" path="res://scripts/ManicheTouch.gd" id="5"]
 
 [sub_resource type="StyleBoxFlat" id="estilo_fundo_barra"]
 bg_color = Color(0.05, 0.05, 0.07, 0.8)
@@ -148,51 +149,38 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
-[node name="Esquerda" type="Control" parent="Controles"]
+[node name="Manche" type="Control" parent="Controles"]
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = 40.0
-offset_top = -210.0
-offset_right = 190.0
-offset_bottom = -60.0
-script = ExtResource("3")
-acao = "mover_esquerda"
-icone = "esquerda"
-raio = 75.0
-
-[node name="Direita" type="Control" parent="Controles"]
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 210.0
-offset_top = -210.0
-offset_right = 360.0
-offset_bottom = -60.0
-script = ExtResource("3")
-acao = "mover_direita"
-icone = "direita"
-raio = 75.0
+offset_left = 10.0
+offset_top = -660.0
+offset_right = 650.0
+offset_bottom = -10.0
+script = ExtResource("5")
 
 [node name="Voar" type="Control" parent="Controles"]
+anchor_left = 1.0
 anchor_top = 1.0
+anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 115.0
-offset_top = -410.0
-offset_right = 285.0
-offset_bottom = -240.0
+offset_left = -300.0
+offset_top = -300.0
+offset_right = -50.0
+offset_bottom = -50.0
 script = ExtResource("3")
 acao = "propulsar"
 icone = "cima"
-raio = 85.0
+raio = 125.0
 
 [node name="Atirar" type="Control" parent="Controles"]
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -240.0
-offset_top = -250.0
-offset_right = -50.0
-offset_bottom = -60.0
+offset_left = -270.0
+offset_top = -520.0
+offset_right = -80.0
+offset_bottom = -330.0
 script = ExtResource("3")
 acao = "atirar"
 rotulo = "TIRO"
@@ -204,14 +192,14 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -330.0
-offset_top = -400.0
-offset_right = -190.0
-offset_bottom = -260.0
+offset_left = -470.0
+offset_top = -250.0
+offset_right = -320.0
+offset_bottom = -100.0
 script = ExtResource("3")
 acao = "bomba"
 icone = "diamante"
-raio = 70.0
+raio = 75.0
 
 [node name="FlashDano" type="ColorRect" parent="."]
 anchors_preset = 15
