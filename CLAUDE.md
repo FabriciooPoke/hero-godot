@@ -20,6 +20,7 @@ Jogo 2.5D de resgate com jetpack (estilo H.E.R.O. clássico), feito em Godot 4.7
 - **Export Web não empacota os glyphs Unicode `▲ ◀ ▶ ◆ ●`** (viram "tofu"/quadrado vazio) — o app nativo usa fallback de fonte do sistema, o Web não. Usar ASCII (`^ < > *`) ou ícones vetoriais desenhados (`draw_colored_polygon`), nunca esses símbolos em texto.
 - **`create_timer()` por padrão ignora `get_tree().paused`** (`process_always = true`). Passe `false` explícito quando o timer precisa respeitar a pausa.
 - **Emissão/luz forte demais com tonemap ACES dessatura pra branco** em vez de manter a cor — é assim que a estação de recarga e os resgates ficaram "brancos" e viraram bug reportado. Mantenha `emission_energy_multiplier` moderado (~1.0–1.6) em objetos coloridos importantes.
+- **O jogo funciona bem em paisagem no celular — não bloqueie por suposição.** `CameraJogo`/`Camera3D` usa `keep_aspect = KEEP_HEIGHT` (padrão do Godot): alargar o viewport só revela mais dos lados, a janela vertical da torre (o que dá tempo de reagir) não muda. Já tentamos bloquear landscape com um aviso "gire o celular" e foi revertido — o usuário quer poder jogar deitado, e funciona. Se mexer na câmera/controles touch de novo, teste em landscape de verdade (toque emulado numa largura tipo 812×375, não só olhe o retrato) antes de assumir que vai ficar ruim.
 
 ## Preferências do usuário
 
