@@ -151,6 +151,7 @@ func _processar_acoes() -> void:
 func disparar_laser() -> void:
 	energia = maxf(0.0, energia - custo_laser)
 	energia_mudou.emit(energia)
+	AudioManager.tocar("laser")
 
 	raio_laser.target_position = Vector3(alcance_laser * olhando_para, 0, 0)
 	raio_laser.force_raycast_update()
@@ -198,6 +199,7 @@ func levar_dano() -> void:
 	chama_esq.emitting = false
 	chama_dir.emitting = false
 	_flash_impacto()
+	AudioManager.tocar("dano")
 	morreu.emit()
 
 

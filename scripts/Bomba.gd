@@ -26,6 +26,7 @@ func explodir() -> void:
 	if _detonada:
 		return
 	_detonada = true
+	AudioManager.tocar("explosao")
 
 	var espaco := get_world_3d().direct_space_state
 	var consulta := PhysicsShapeQueryParameters3D.new()

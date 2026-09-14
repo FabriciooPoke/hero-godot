@@ -14,4 +14,5 @@ func _ao_tocar(corpo: Node3D) -> void:
 	if corpo.has_method("coletar_resgate"):
 		corpo.coletar_resgate()
 		coletado.emit()
+		AudioManager.tocar("resgate")
 		queue_free()

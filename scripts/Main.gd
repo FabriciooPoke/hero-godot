@@ -107,6 +107,7 @@ func _ao_extrair() -> void:
 	if estado != Estado.JOGANDO:
 		return
 	estado = Estado.NIVEL_COMPLETO
+	AudioManager.tocar("nivel_completo")
 
 	var bonus: int = int(jogador.energia * 10) + jogador.bombas * 80 + 1000
 	pontos += bonus
@@ -128,6 +129,7 @@ func _ao_morrer() -> void:
 
 	if vidas <= 0:
 		estado = Estado.FIM
+		AudioManager.tocar("fim_de_jogo")
 		hud.mostrar_fim(pontos, nivel, iniciar_jogo)
 		return
 
