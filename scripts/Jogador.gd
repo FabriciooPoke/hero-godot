@@ -6,6 +6,7 @@ signal energia_mudou(valor: float)
 signal bombas_mudou(qtd: int)
 signal morreu()
 signal resgate_coletado(total: int)
+signal colidiu_com_parede(custo: float)
 
 # --- Ajuste de "feel" do voo. Mexa aqui pra calibrar a jogabilidade. ---
 @export var impulso_jetpack: float = 34.0      ## força pra cima ao segurar o botão
@@ -32,6 +33,13 @@ var fase_atual: int = 1
 
 @export var alcance_laser: float = 14.0
 @export var raio_explosao: float = 8.0
+
+# --- Colisão com contêiner ---
+## Velocidade mínima de impacto contra uma parede pra contar como "bateu"
+## (perde vida) em vez de só deslizar/encostar durante o voo normal.
+## Abaixo da velocidade lateral máxima (9-11) pra uma investida de propósito
+## sempre valer, mas acima do suficiente pra não punir ajustes finos de rota.
+@export var velocidade_min_colisao: float = 6.0
 
 var energia: float
 var bombas: int
@@ -84,12 +92,29 @@ func _physics_process(delta: float) -> void:
 	_processar_energia(delta)
 	_processar_acoes()
 
+	var vel_antes := velocity
 	move_and_slide()
+	_verificar_colisao(vel_antes)
 
 	# trava o eixo Z — jogo é 2.5D
 	global_position.z = 0.0
 
 	helice.rotate_y(delta * (26.0 if Input.is_action_pressed("propulsar") else 9.0))
+
+
+## Bater com força numa parede tira vida — voar colado nelas pra ganhar
+## atalho deixa de ser de graça. Só conta impacto de verdade (velocidade
+## contra a superfície acima do limiar); deslizar/encostar de leve não pune.
+func _verificar_colisao(vel_antes: Vector3) -> void:
+	if not vivo or invulneravel > 0.0:
+		return
+	for i in range(get_slide_collision_count()):
+		var colisao := get_slide_collision(i)
+		var impacto: float = -vel_antes.dot(colisao.get_normal())
+		if impacto >= velocidade_min_colisao:
+			colidiu_com_parede.emit(impacto)
+			levar_dano()
+			return
 
 
 func _processar_voo(delta: float) -> void:

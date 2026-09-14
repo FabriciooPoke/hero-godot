@@ -30,6 +30,7 @@ func _process(_delta: float) -> void:
 func _ready() -> void:
 	vidas = vidas_iniciais
 	jogador.morreu.connect(_ao_morrer)
+	jogador.colidiu_com_parede.connect(_ao_colidir_parede)
 	jogador.resgate_coletado.connect(_ao_coletar_resgate)
 	jogador.energia_mudou.connect(hud.atualizar_energia)
 	jogador.bombas_mudou.connect(hud.atualizar_bombas)
@@ -140,12 +141,23 @@ func _ao_extrair() -> void:
 	)
 
 
+## Guarda o motivo da última batida forte pra mostrar um aviso específico
+## (em vez do genérico) quando a vida for perdida logo em seguida.
+var _motivo_dano: String = ""
+
+func _ao_colidir_parede(_forca: float) -> void:
+	_motivo_dano = "Você bateu na parede! -1 vida"
+
+
 func _ao_morrer() -> void:
 	if estado != Estado.JOGANDO:
 		return
 	estado = Estado.MORRENDO
 	camera.tremer(1.1)
 	hud.mostrar_dano()
+	if _motivo_dano != "":
+		hud.mostrar_aviso(_motivo_dano)
+		_motivo_dano = ""
 	vidas -= 1
 	hud.atualizar_vidas(vidas)
 
