@@ -21,13 +21,6 @@ signal sair_para_menu_pressionado()
 @onready var slider_efeitos: HSlider = $PainelMenu/Volumes/SliderEfeitos
 @onready var slider_musica_pausa: HSlider = $PainelPausa/Volumes/SliderMusica
 @onready var slider_efeitos_pausa: HSlider = $PainelPausa/Volumes/SliderEfeitos
-@onready var aviso_girar: Control = $AvisoGirar
-
-## Jogo é 2.5D vertical — não faz sentido jogável em paisagem (você perde a
-## visão da torre pra cima/baixo, que é o que dá tempo de reagir). Em vez de
-## tentar adaptar o layout todo pras duas orientações, bloqueia com um aviso
-## até o celular voltar pro retrato.
-var _pausado_por_rotacao: bool = false
 
 
 func _ready() -> void:
@@ -39,12 +32,7 @@ func _ready() -> void:
 	$PainelPausa/BotaoMenu.pressed.connect(func(): sair_para_menu_pressionado.emit())
 	# Só mostra os botões touch em quem realmente tem tela sensível ao toque —
 	# no desktop (mesmo via navegador) eles só atrapalhariam a visão.
-	var em_touch: bool = OS.has_feature("mobile") or DisplayServer.is_touchscreen_available()
-	$Controles.visible = em_touch
-
-	if em_touch:
-		get_viewport().size_changed.connect(_checar_orientacao)
-		_checar_orientacao()
+	$Controles.visible = OS.has_feature("mobile") or DisplayServer.is_touchscreen_available()
 
 	for slider in [slider_musica, slider_musica_pausa]:
 		slider.value = AudioManager.volume_musica()
@@ -52,19 +40,6 @@ func _ready() -> void:
 	for slider in [slider_efeitos, slider_efeitos_pausa]:
 		slider.value = AudioManager.volume_efeitos()
 		slider.value_changed.connect(AudioManager.definir_volume_efeitos)
-
-
-func _checar_orientacao() -> void:
-	var tam: Vector2 = get_viewport().get_visible_rect().size
-	var paisagem: bool = tam.x > tam.y
-	aviso_girar.visible = paisagem
-	if paisagem:
-		if not get_tree().paused:
-			_pausado_por_rotacao = true
-			get_tree().paused = true
-	elif _pausado_por_rotacao:
-		_pausado_por_rotacao = false
-		get_tree().paused = false
 
 
 func _unhandled_input(event: InputEvent) -> void:
