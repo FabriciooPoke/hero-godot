@@ -3,8 +3,11 @@
 *.translation
 
 # Builds de export (gerados — export_presets.cfg fica versionado)
+# build/web/ FICA versionado de propósito: é o que a Vercel serve, e não
+# há passo de build no servidor (o Godot não roda lá) pra gerá-lo de novo.
 export/
-build/
+build/*
+!build/web/
 
 # Sistema
 .DS_Store
