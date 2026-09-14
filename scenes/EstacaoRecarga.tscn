@@ -13,8 +13,8 @@ height = 2.4
 [sub_resource type="StandardMaterial3D" id="mat"]
 albedo_color = Color(0.2, 0.85, 0.5, 1)
 emission_enabled = true
-emission = Color(0.3, 1, 0.6, 1)
-emission_energy_multiplier = 3.0
+emission = Color(0.1, 0.75, 0.35, 1)
+emission_energy_multiplier = 1.0
 metallic = 0.5
 roughness = 0.3
 
@@ -45,9 +45,9 @@ mesh = SubResource("malha")
 material_override = SubResource("mat")
 
 [node name="Luz" type="OmniLight3D" parent="."]
-light_color = Color(0.3, 1, 0.6, 1)
-light_energy = 2.0
-omni_range = 10.0
+light_color = Color(0.2, 1, 0.55, 1)
+light_energy = 0.5
+omni_range = 8.0
 
 [node name="Particulas" type="GPUParticles3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.0, 0)
