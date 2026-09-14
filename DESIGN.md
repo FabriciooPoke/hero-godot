@@ -54,7 +54,7 @@ Regras que fazem a estação funcionar:
 
 1. **Carga limitada.** Cada estação dá uma quantidade fixa (60–80) e esgota.
    Não dá pra estacionar nela e ficar imortal.
-2. **Reativa depois de 10s seca.** Esgotou, fica escura por 10 segundos e volta
+2. **Reativa depois de 15s seca.** Esgotou, fica escura por 15 segundos e volta
    a carregar — dá pra usar de novo se você voltar, mas não é instantâneo.
 3. **Fica no caminho, não no destino.** Estão no vão de subida — você passa por elas
    naturalmente, a decisão é *parar ou seguir*, não *achar*.

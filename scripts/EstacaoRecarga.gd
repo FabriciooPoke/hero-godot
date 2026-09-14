@@ -8,7 +8,7 @@ signal reativada()
 
 @export var carga_total: float = 70.0      ## quanta energia esta estação tem pra dar
 @export var taxa: float = 45.0             ## energia por segundo transferida
-@export var tempo_reativacao: float = 10.0 ## segundos até voltar a carregar depois de esgotar
+@export var tempo_reativacao: float = 15.0 ## segundos até voltar a carregar depois de esgotar
 
 const COR_ATIVA := Color(0.3, 1, 0.6, 1)
 const COR_ESGOTADA := Color(0.3, 0.3, 0.35, 1)
