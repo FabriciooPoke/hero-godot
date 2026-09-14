@@ -28,7 +28,22 @@ const CENAS_CONTEINER: Array[PackedScene] = [
 ## no nó do modelo (achada inspecionando a cadeia de transform completa).
 const ESCALA_CONTEINER := LARGURA_CONTEINER / (3.046667 * 0.27)
 
+## O modelo não tem textura própria (geometria branca lisa — a cor que se vê
+## vem só da luz da cena) — então dá pra tingir livremente sem perder detalhe.
+## Paleta de cores reais de contêiner + duas variantes enferrujadas (tom
+## terroso, mais ásperas/foscas) pra quebrar a monotonia visual da torre.
+const PALETA_CONTEINER := [
+	{"cor": Color(0.12, 0.36, 0.56), "rugosidade": 0.75, "metalico": 0.2},   # azul
+	{"cor": Color(0.55, 0.15, 0.13), "rugosidade": 0.75, "metalico": 0.2},   # vermelho
+	{"cor": Color(0.17, 0.33, 0.22), "rugosidade": 0.75, "metalico": 0.2},   # verde
+	{"cor": Color(0.68, 0.52, 0.15), "rugosidade": 0.75, "metalico": 0.2},   # amarelo mostarda
+	{"cor": Color(0.15, 0.42, 0.43), "rugosidade": 0.75, "metalico": 0.2},   # azul petróleo
+	{"cor": Color(0.52, 0.30, 0.14), "rugosidade": 0.95, "metalico": 0.05},  # enferrujado claro
+	{"cor": Color(0.36, 0.23, 0.15), "rugosidade": 0.95, "metalico": 0.0},   # enferrujado escuro
+]
+
 var _forma_conteiner: BoxShape3D
+var _materiais_conteiner: Array[StandardMaterial3D] = []
 
 var nivel_atual: int = 1
 var altura_total: float = 0.0
@@ -166,6 +181,18 @@ func _x_da_coluna(col: int) -> float:
 	return (col - COLUNAS / 2.0) * LARGURA_CONTEINER
 
 
+## Modelos importados vêm com uma malha aninhada dentro de um Node3D
+## embrulho — desce a árvore até achar o MeshInstance3D de verdade.
+func _achar_mesh_instance(no: Node) -> MeshInstance3D:
+	if no is MeshInstance3D:
+		return no
+	for filho in no.get_children():
+		var achado := _achar_mesh_instance(filho)
+		if achado:
+			return achado
+	return null
+
+
 ## Forma de colisão é criada uma vez e reaproveitada por todos os
 ## contêineres — evita recriar recursos idênticos centenas de vezes por nível.
 ## A física continua sendo essa caixa simples independente do visual.
@@ -174,6 +201,13 @@ func _preparar_recursos_conteiner() -> void:
 		return
 	_forma_conteiner = BoxShape3D.new()
 	_forma_conteiner.size = Vector3(LARGURA_CONTEINER, ALTURA_CONTEINER, LARGURA_CONTEINER)
+
+	for entrada in PALETA_CONTEINER:
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = entrada.cor
+		mat.roughness = entrada.rugosidade
+		mat.metallic = entrada.metalico
+		_materiais_conteiner.append(mat)
 
 
 func _criar_conteiner(col: int, andar: int, resistencia: int) -> void:
@@ -189,6 +223,11 @@ func _criar_conteiner(col: int, andar: int, resistencia: int) -> void:
 	malha.scale = Vector3.ONE * ESCALA_CONTEINER
 	malha.position.y = -ALTURA_CONTEINER * 0.5  # pivô do modelo fica na base, não no centro
 	corpo.add_child(malha)
+
+	var cor_indice: int = (col * 5 + andar * 11) % _materiais_conteiner.size()
+	var mesh_instancia := _achar_mesh_instance(malha)
+	if mesh_instancia:
+		mesh_instancia.material_override = _materiais_conteiner[cor_indice]
 
 	var forma := CollisionShape3D.new()
 	forma.shape = _forma_conteiner
