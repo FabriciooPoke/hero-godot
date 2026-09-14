@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3]
+[gd_scene load_steps=22 format=3]
 
 [ext_resource type="Script" path="res://scripts/Jogador.gd" id="1"]
 
@@ -58,6 +58,42 @@ albedo_color = Color(1, 0.45, 0.2, 1)
 emission_enabled = true
 emission = Color(1, 0.5, 0.2, 1)
 emission_energy_multiplier = 4.0
+
+[sub_resource type="StandardMaterial3D" id="mat_chama"]
+shading_mode = 0
+vertex_color_use_as_albedo = true
+emission_enabled = true
+emission = Color(1, 0.6, 0.2, 1)
+emission_energy_multiplier = 3.0
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+
+[sub_resource type="SphereMesh" id="malha_chama"]
+radius = 0.12
+height = 0.24
+material = SubResource("mat_chama")
+
+[sub_resource type="Curve" id="curva_chama_dados"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), -2.0, 0.0, 0, 0]
+
+[sub_resource type="CurveTexture" id="curva_chama"]
+curve = SubResource("curva_chama_dados")
+
+[sub_resource type="Gradient" id="gradiente_chama"]
+offsets = PackedFloat32Array(0, 0.4, 1)
+colors = PackedColorArray(1, 0.95, 0.6, 1, 1, 0.5, 0.1, 0.9, 0.8, 0.1, 0.05, 0)
+
+[sub_resource type="ParticleProcessMaterial" id="proc_chama"]
+direction = Vector3(0, -1, 0)
+spread = 12.0
+initial_velocity_min = 2.5
+initial_velocity_max = 4.0
+gravity = Vector3(0, -0.5, 0)
+scale_min = 0.5
+scale_max = 1.1
+scale_curve = SubResource("curva_chama")
+color_ramp = SubResource("gradiente_chama")
 
 [node name="Jogador" type="CharacterBody3D" groups=["jogador"]]
 collision_layer = 1
@@ -128,6 +164,8 @@ emitting = false
 amount = 40
 lifetime = 0.4
 local_coords = false
+process_material = SubResource("proc_chama")
+draw_pass_1 = SubResource("malha_chama")
 
 [node name="ChamaDireita" type="GPUParticles3D" parent="Modelo/Mochila"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.45, -0.6, 0)
@@ -135,6 +173,8 @@ emitting = false
 amount = 40
 lifetime = 0.4
 local_coords = false
+process_material = SubResource("proc_chama")
+draw_pass_1 = SubResource("malha_chama")
 
 [node name="RaioLaser" type="RayCast3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
