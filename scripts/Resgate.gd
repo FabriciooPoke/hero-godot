@@ -3,6 +3,8 @@ extends Area3D
 
 signal coletado()
 
+const CENA_EFEITO := preload("res://scenes/efeitos/EfeitoResgate.tscn")
+
 func _ready() -> void:
 	body_entered.connect(_ao_tocar)
 
@@ -15,4 +17,7 @@ func _ao_tocar(corpo: Node3D) -> void:
 		corpo.coletar_resgate()
 		coletado.emit()
 		AudioManager.tocar("resgate")
+		var efeito := CENA_EFEITO.instantiate()
+		get_tree().current_scene.add_child(efeito)
+		efeito.global_position = global_position
 		queue_free()

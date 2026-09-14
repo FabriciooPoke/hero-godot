@@ -131,6 +131,7 @@ func _ao_coletar_resgate(total: int) -> void:
 	pontos += 500
 	hud.atualizar_pontos(pontos)
 	hud.atualizar_resgates(total, gerador.total_resgates)
+	camera.pulso_zoom()
 	# queue_free() do resgate ainda não processou — adia pra depois de sair da árvore
 	_atualizar_marcadores_resgate.call_deferred()
 
@@ -160,6 +161,16 @@ var _motivo_dano: String = ""
 
 func _ao_colidir_parede(_forca: float) -> void:
 	_motivo_dano = "Você bateu na parede! -1 vida"
+	_hit_stop()
+
+
+## Congelamento breve (tempo real, ignora o próprio time_scale) pra dar peso
+## físico a um impacto forte. Só usado aqui — bater na parede é raro o
+## bastante pra merecer o destaque; usar em toda ação viraria cansativo.
+func _hit_stop(duracao: float = 0.05, escala: float = 0.05) -> void:
+	Engine.time_scale = escala
+	await get_tree().create_timer(duracao, true, false, true).timeout
+	Engine.time_scale = 1.0
 
 
 func _ao_morrer() -> void:

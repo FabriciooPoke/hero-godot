@@ -41,3 +41,14 @@ func _process(delta: float) -> void:
 func tremer(forca: float = 0.6) -> void:
 	_shake_forca = forca
 	_shake_t = 0.0
+
+
+## Pulso curto de zoom (fov) — dá peso a um momento bom (resgate, checkpoint)
+## sem ser violento como o tremor de dano. Sutil de propósito.
+func pulso_zoom(intensidade: float = 3.5, duracao: float = 0.22) -> void:
+	var fov_base := fov
+	var t := create_tween()
+	t.tween_property(self, "fov", fov_base - intensidade, duracao * 0.35) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	t.tween_property(self, "fov", fov_base, duracao * 0.65) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
