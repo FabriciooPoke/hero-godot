@@ -1,0 +1,234 @@
+extends Node3D
+## Monta a torre do nível.
+##
+## REGRA DE DESIGN CENTRAL: a energia é o relógio do jogo.
+## O espaçamento entre estações de recarga é o que define a dificuldade —
+## mais longe = mais tenso. Veja DESIGN.md.
+
+signal nivel_pronto(altura_total: float)
+
+const CENA_RESGATE := preload("res://scenes/Resgate.tscn")
+const CENA_DRONE := preload("res://scenes/Drone.tscn")
+const CENA_HELICOPTERO := preload("res://scenes/Helicoptero.tscn")
+const CENA_RECARGA := preload("res://scenes/EstacaoRecarga.tscn")
+
+const LARGURA_CONTEINER := 6.0
+const ALTURA_CONTEINER := 3.0
+const COLUNAS := 7
+
+const SHADER_CONTEINER := preload("res://resources/shaders/conteiner.gdshader")
+
+var _malha_conteiner: BoxMesh
+var _forma_conteiner: BoxShape3D
+var _materiais_conteiner: Array[ShaderMaterial] = []
+
+var nivel_atual: int = 1
+var altura_total: float = 0.0
+var pos_inicial: Vector3 = Vector3.ZERO
+var pos_helicoptero: Vector3 = Vector3.ZERO
+var total_resgates: int = 0
+var helicoptero_atual: Node3D = null
+
+const CORES := [
+	Color(0.55, 0.18, 0.15),
+	Color(0.18, 0.34, 0.22),
+	Color(0.62, 0.48, 0.16),
+	Color(0.20, 0.28, 0.38),
+	Color(0.38, 0.34, 0.30),
+]
+
+
+## Perfil de dificuldade de cada fase.
+## recarga_cada: de quantos em quantos andares aparece uma estação.
+##   Maior = postos mais distantes = mais tensão. É o botão principal
+##   de dificuldade do jogo inteiro.
+func perfil_da_fase(n: int) -> Dictionary:
+	match n:
+		1:
+			# Ensina o básico. Recarga sobrando, quase sem inimigo.
+			return {andares = 20, recarga_cada = 4, carga_estacao = 80.0,
+					resgates = 3, chance_drone = 0.06, resistencia_conteiner = 1}
+		2:
+			# Aperta o espaçamento. Introduz drones de verdade.
+			return {andares = 26, recarga_cada = 5, carga_estacao = 70.0,
+					resgates = 4, chance_drone = 0.14, resistencia_conteiner = 1}
+		3:
+			# Contêineres mais duros: usar o laser passa a custar caro.
+			return {andares = 32, recarga_cada = 6, carga_estacao = 65.0,
+					resgates = 5, chance_drone = 0.20, resistencia_conteiner = 2}
+		4:
+			# Estações escassas. Aqui o jogador precisa planejar a rota.
+			return {andares = 38, recarga_cada = 8, carga_estacao = 60.0,
+					resgates = 6, chance_drone = 0.26, resistencia_conteiner = 2}
+		_:
+			# Fase 5+: escala contínua, com piso pra não virar impossível
+			var extra: int = n - 4
+			return {
+				andares = 38 + extra * 6,
+				recarga_cada = mini(10, 8 + extra / 2),
+				carga_estacao = maxf(45.0, 60.0 - extra * 3.0),
+				resgates = mini(9, 6 + extra / 2),
+				chance_drone = minf(0.40, 0.26 + extra * 0.03),
+				resistencia_conteiner = 3,
+			}
+
+
+func gerar(nivel: int) -> void:
+	nivel_atual = nivel
+	_preparar_recursos_conteiner()
+	_limpar()
+
+	var p := perfil_da_fase(nivel)
+	var andares: int = p.andares
+	altura_total = andares * ALTURA_CONTEINER
+
+	var col_vao: int = COLUNAS / 2
+	var andares_de_resgate := _sortear_andares(p.resgates, 4, andares - 3)
+
+	for andar in range(andares):
+		if andar > 2:
+			col_vao = clampi(col_vao + randi_range(-1, 1), 1, COLUNAS - 3)
+
+		# a cada ~17 andares, um andar sem paredes — respiro visual e vista aberta
+		var andar_aberto: bool = andar > 8 and andar % 17 == 0
+
+		if not andar_aberto:
+			for col in range(COLUNAS):
+				if col == col_vao or col == col_vao + 1:
+					continue
+				_criar_conteiner(col, andar, p.resistencia_conteiner)
+
+		# Estação de recarga — o "checkpoint" de energia
+		if andar > 2 and andar % int(p.recarga_cada) == 0:
+			_criar_recarga(col_vao, andar, p.carga_estacao)
+
+		if andar in andares_de_resgate:
+			_criar_resgate(col_vao, andar)
+			total_resgates += 1
+
+		if andar > 5 and randf() < float(p.chance_drone):
+			_criar_drone(col_vao, andar)
+
+	pos_inicial = Vector3(_x_da_coluna(COLUNAS / 2), ALTURA_CONTEINER, 0)
+	pos_helicoptero = Vector3(_x_da_coluna(col_vao), altura_total + 6.0, 0)
+	_criar_helicoptero(pos_helicoptero)
+	_criar_chao_seguranca()
+
+	nivel_pronto.emit(altura_total)
+
+
+## Chão de segurança na base — se o jogador cair pelo vão sem voar, pousa
+## aqui em vez de cair pro vazio pra sempre. Suaviza a curva de aprendizado
+## sem tirar o risco de ficar sem energia lá em cima.
+func _criar_chao_seguranca() -> void:
+	var corpo := StaticBody3D.new()
+	corpo.collision_layer = 2
+
+	var largura_total: float = COLUNAS * LARGURA_CONTEINER + 4.0
+	var malha := MeshInstance3D.new()
+	var caixa := BoxMesh.new()
+	caixa.size = Vector3(largura_total, 2.0, LARGURA_CONTEINER)
+	malha.mesh = caixa
+
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.16, 0.14, 0.13)
+	mat.roughness = 0.9
+	malha.material_override = mat
+	corpo.add_child(malha)
+
+	var forma := CollisionShape3D.new()
+	var box_forma := BoxShape3D.new()
+	box_forma.size = caixa.size
+	forma.shape = box_forma
+	corpo.add_child(forma)
+
+	corpo.position = Vector3(0, -1.0, 0)
+	add_child(corpo)
+
+
+## Espalha os resgates pela torre sem amontoar
+func _sortear_andares(quantos: int, minimo: int, maximo: int) -> Array:
+	var resultado: Array = []
+	var faixa: int = maxi(1, (maximo - minimo) / maxi(1, quantos))
+	for i in range(quantos):
+		var base: int = minimo + i * faixa
+		resultado.append(clampi(base + randi_range(0, faixa - 1), minimo, maximo))
+	return resultado
+
+
+func _limpar() -> void:
+	for filho in get_children():
+		filho.queue_free()
+	total_resgates = 0
+
+
+func _x_da_coluna(col: int) -> float:
+	return (col - COLUNAS / 2.0) * LARGURA_CONTEINER
+
+
+## Mesh, forma de colisão e paleta de materiais são criados uma vez e
+## reaproveitados por todos os contêineres — evita recriar recursos
+## idênticos centenas de vezes a cada nível gerado.
+func _preparar_recursos_conteiner() -> void:
+	if _malha_conteiner:
+		return
+
+	_malha_conteiner = BoxMesh.new()
+	_malha_conteiner.size = Vector3(LARGURA_CONTEINER, ALTURA_CONTEINER, LARGURA_CONTEINER)
+
+	_forma_conteiner = BoxShape3D.new()
+	_forma_conteiner.size = _malha_conteiner.size
+
+	for cor in CORES:
+		var mat := ShaderMaterial.new()
+		mat.shader = SHADER_CONTEINER
+		mat.set_shader_parameter("cor_base", cor)
+		_materiais_conteiner.append(mat)
+
+
+func _criar_conteiner(col: int, andar: int, resistencia: int) -> void:
+	var corpo := StaticBody3D.new()
+	corpo.set_script(preload("res://scripts/Conteiner.gd"))
+	corpo.position = Vector3(_x_da_coluna(col), andar * ALTURA_CONTEINER, 0)
+	corpo.collision_layer = 2
+	corpo.resistencia = resistencia
+
+	var malha := MeshInstance3D.new()
+	malha.mesh = _malha_conteiner
+	malha.material_override = _materiais_conteiner[(col * 3 + andar * 7) % _materiais_conteiner.size()]
+	malha.set_instance_shader_parameter("semente", randf() * 1000.0)
+	malha.set_instance_shader_parameter("variacao_cor", randf_range(-0.12, 0.12))
+	corpo.add_child(malha)
+
+	var forma := CollisionShape3D.new()
+	forma.shape = _forma_conteiner
+	corpo.add_child(forma)
+
+	add_child(corpo)
+
+
+func _criar_recarga(col: int, andar: int, carga: float) -> void:
+	var e := CENA_RECARGA.instantiate()
+	e.position = Vector3(_x_da_coluna(col) + LARGURA_CONTEINER * 0.5, andar * ALTURA_CONTEINER, 0)
+	e.carga_total = carga
+	add_child(e)
+
+
+func _criar_resgate(col: int, andar: int) -> void:
+	var r := CENA_RESGATE.instantiate()
+	r.position = Vector3(_x_da_coluna(col) + LARGURA_CONTEINER * 0.5, andar * ALTURA_CONTEINER, 0)
+	add_child(r)
+
+
+func _criar_drone(col: int, andar: int) -> void:
+	var d := CENA_DRONE.instantiate()
+	d.position = Vector3(_x_da_coluna(col) + LARGURA_CONTEINER * 0.5, andar * ALTURA_CONTEINER, 0)
+	d.amplitude = LARGURA_CONTEINER * 0.8
+	add_child(d)
+
+
+func _criar_helicoptero(pos: Vector3) -> void:
+	var h := CENA_HELICOPTERO.instantiate()
+	h.position = pos
+	add_child(h)
+	helicoptero_atual = h

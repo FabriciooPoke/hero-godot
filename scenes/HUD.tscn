@@ -1,0 +1,295 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/HUD.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/BarraAltura.gd" id="2"]
+
+[sub_resource type="StyleBoxFlat" id="estilo_fundo_barra"]
+bg_color = Color(0.05, 0.05, 0.07, 0.8)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 0.35)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="estilo_preenchimento"]
+bg_color = Color(0.95, 0.72, 0.15, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="HUD" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("1")
+
+[node name="Topo" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 200.0
+mouse_filter = 2
+
+[node name="Pontos" type="Label" parent="Topo"]
+offset_left = 30.0
+offset_top = 24.0
+offset_right = 400.0
+offset_bottom = 110.0
+theme_override_font_sizes/font_size = 40
+text = "SCORE
+000000"
+
+[node name="Nivel" type="Label" parent="Topo"]
+offset_left = 30.0
+offset_top = 120.0
+offset_right = 400.0
+offset_bottom = 160.0
+theme_override_font_sizes/font_size = 26
+text = "TORRE 01"
+
+[node name="Vidas" type="Label" parent="Topo"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -380.0
+offset_top = 24.0
+offset_right = -30.0
+offset_bottom = 70.0
+horizontal_alignment = 2
+theme_override_font_sizes/font_size = 30
+text = "LIVES  ▲▲▲▲▲"
+
+[node name="Resgates" type="Label" parent="Topo"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -380.0
+offset_top = 80.0
+offset_right = -30.0
+offset_bottom = 120.0
+horizontal_alignment = 2
+theme_override_font_sizes/font_size = 26
+text = "RESGATES 0/0"
+
+[node name="BarraAltura" type="Control" parent="."]
+anchor_left = 1.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -50.0
+offset_top = 140.0
+offset_right = -14.0
+offset_bottom = -450.0
+mouse_filter = 2
+script = ExtResource("2")
+
+[node name="Trilho" type="Panel" parent="BarraAltura"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("estilo_fundo_barra")
+
+[node name="Jogador" type="Label" parent="BarraAltura"]
+theme_override_font_sizes/font_size = 30
+text = "◀"
+modulate = Color(0.4, 0.85, 1, 1)
+mouse_filter = 2
+
+[node name="Helicoptero" type="Label" parent="BarraAltura"]
+theme_override_font_sizes/font_size = 22
+text = "▲"
+modulate = Color(0.55, 0.55, 0.6, 1)
+mouse_filter = 2
+
+[node name="Rodape" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -430.0
+mouse_filter = 2
+
+[node name="BarraEnergia" type="ProgressBar" parent="Rodape"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 60.0
+offset_top = 10.0
+offset_right = -60.0
+offset_bottom = 48.0
+theme_override_styles/background = SubResource("estilo_fundo_barra")
+theme_override_styles/fill = SubResource("estilo_preenchimento")
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="Bombas" type="Label" parent="Rodape"]
+offset_left = 60.0
+offset_top = 56.0
+offset_right = 600.0
+offset_bottom = 94.0
+theme_override_font_sizes/font_size = 26
+text = "BOMBAS ◆◆◆◆◆◆"
+
+[node name="Controles" type="Node2D" parent="."]
+
+[node name="Esquerda" type="TouchScreenButton" parent="Controles"]
+position = Vector2(90, 1560)
+action = "mover_esquerda"
+
+[node name="Direita" type="TouchScreenButton" parent="Controles"]
+position = Vector2(330, 1560)
+action = "mover_direita"
+
+[node name="Voar" type="TouchScreenButton" parent="Controles"]
+position = Vector2(210, 1400)
+action = "propulsar"
+
+[node name="Atirar" type="TouchScreenButton" parent="Controles"]
+position = Vector2(790, 1440)
+action = "atirar"
+
+[node name="Bomba" type="TouchScreenButton" parent="Controles"]
+position = Vector2(820, 1640)
+action = "bomba"
+
+[node name="FlashDano" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(1, 0.1, 0.1, 0)
+
+[node name="Aviso" type="Label" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -420.0
+offset_top = -40.0
+offset_right = 420.0
+offset_bottom = 40.0
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 38
+text = ""
+
+[node name="PainelMenu" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Fundo" type="ColorRect" parent="PainelMenu"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.02, 0.02, 0.05, 0.9)
+
+[node name="Titulo" type="Label" parent="PainelMenu"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -460.0
+offset_top = -300.0
+offset_right = 460.0
+offset_bottom = -140.0
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 76
+text = "H.E.R.O.
+RELOADED"
+
+[node name="Instrucoes" type="Label" parent="PainelMenu"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -430.0
+offset_top = -100.0
+offset_right = 430.0
+offset_bottom = 140.0
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 30
+text = "Voe pelas torres de contêineres,
+resgate todos e chegue ao helicóptero.
+
+VOAR: W / ▲     MOVER: A D / ◀ ▶
+LASER: ESPAÇO     BOMBA: B"
+
+[node name="BotaoJogar" type="Button" parent="PainelMenu"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = 200.0
+offset_right = 200.0
+offset_bottom = 300.0
+theme_override_font_sizes/font_size = 40
+text = "JOGAR"
+
+[node name="PainelFim" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+visible = false
+
+[node name="Fundo" type="ColorRect" parent="PainelFim"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.02, 0.02, 0.05, 0.9)
+
+[node name="Titulo" type="Label" parent="PainelFim"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -460.0
+offset_top = -240.0
+offset_right = 460.0
+offset_bottom = -140.0
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 60
+text = "FIM DE JOGO"
+
+[node name="Detalhe" type="Label" parent="PainelFim"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -80.0
+offset_right = 400.0
+offset_bottom = 80.0
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 36
+text = ""
+
+[node name="BotaoAcao" type="Button" parent="PainelFim"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -240.0
+offset_top = 160.0
+offset_right = 240.0
+offset_bottom = 260.0
+theme_override_font_sizes/font_size = 38
+text = "JOGAR DE NOVO"

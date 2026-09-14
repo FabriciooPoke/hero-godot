@@ -1,0 +1,22 @@
+[gd_resource type="Environment" load_steps=2 format=3]
+
+[sub_resource type="ProceduralSkyMaterial" id="ceu"]
+sky_top_color = Color(0.08, 0.08, 0.18, 1)
+sky_horizon_color = Color(0.45, 0.18, 0.22, 1)
+ground_bottom_color = Color(0.05, 0.04, 0.06, 1)
+ground_horizon_color = Color(0.35, 0.15, 0.18, 1)
+sun_angle_max = 40.0
+
+[resource]
+background_mode = 2
+sky = SubResource("ceu")
+ambient_light_source = 3
+ambient_light_color = Color(0.4, 0.35, 0.45, 1)
+ambient_light_energy = 0.6
+tonemap_mode = 3
+glow_enabled = true
+glow_intensity = 0.6
+glow_bloom = 0.15
+fog_enabled = true
+fog_light_color = Color(0.35, 0.22, 0.3, 1)
+fog_density = 0.004

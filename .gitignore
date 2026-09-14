@@ -1,0 +1,10 @@
+# Godot 4+ cache/import artifacts — regenerados automaticamente
+.godot/
+*.translation
+
+# Builds de export
+export/
+export_presets.cfg
+
+# Sistema
+.DS_Store
