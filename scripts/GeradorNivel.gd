@@ -16,11 +16,19 @@ const LARGURA_CONTEINER := 6.0
 const ALTURA_CONTEINER := 3.0
 const COLUNAS := 7
 
-const SHADER_CONTEINER := preload("res://resources/shaders/conteiner.gdshader")
+## Modelos reais (CC0, Kenney "City Kit Industrial") substituem os blocos
+## coloridos primitivos. O comprimento natural do modelo (~3.047) escalado
+## pra caber na largura do vão do jogo (6.0) — ver assets/licencas/.
+const CENAS_CONTEINER: Array[PackedScene] = [
+	preload("res://assets/modelos/shipping-container-a.glb"),
+	preload("res://assets/modelos/shipping-container-b.glb"),
+	preload("res://assets/modelos/shipping-container-c.glb"),
+]
+## 3.046667 = comprimento cru da malha; 0.27 = escala interna já embutida
+## no nó do modelo (achada inspecionando a cadeia de transform completa).
+const ESCALA_CONTEINER := LARGURA_CONTEINER / (3.046667 * 0.27)
 
-var _malha_conteiner: BoxMesh
 var _forma_conteiner: BoxShape3D
-var _materiais_conteiner: Array[ShaderMaterial] = []
 
 var nivel_atual: int = 1
 var altura_total: float = 0.0
@@ -28,14 +36,6 @@ var pos_inicial: Vector3 = Vector3.ZERO
 var pos_helicoptero: Vector3 = Vector3.ZERO
 var total_resgates: int = 0
 var helicoptero_atual: Node3D = null
-
-const CORES := [
-	Color(0.55, 0.18, 0.15),
-	Color(0.18, 0.34, 0.22),
-	Color(0.62, 0.48, 0.16),
-	Color(0.20, 0.28, 0.38),
-	Color(0.38, 0.34, 0.30),
-]
 
 
 ## Perfil de dificuldade de cada fase.
@@ -166,24 +166,14 @@ func _x_da_coluna(col: int) -> float:
 	return (col - COLUNAS / 2.0) * LARGURA_CONTEINER
 
 
-## Mesh, forma de colisão e paleta de materiais são criados uma vez e
-## reaproveitados por todos os contêineres — evita recriar recursos
-## idênticos centenas de vezes a cada nível gerado.
+## Forma de colisão é criada uma vez e reaproveitada por todos os
+## contêineres — evita recriar recursos idênticos centenas de vezes por nível.
+## A física continua sendo essa caixa simples independente do visual.
 func _preparar_recursos_conteiner() -> void:
-	if _malha_conteiner:
+	if _forma_conteiner:
 		return
-
-	_malha_conteiner = BoxMesh.new()
-	_malha_conteiner.size = Vector3(LARGURA_CONTEINER, ALTURA_CONTEINER, LARGURA_CONTEINER)
-
 	_forma_conteiner = BoxShape3D.new()
-	_forma_conteiner.size = _malha_conteiner.size
-
-	for cor in CORES:
-		var mat := ShaderMaterial.new()
-		mat.shader = SHADER_CONTEINER
-		mat.set_shader_parameter("cor_base", cor)
-		_materiais_conteiner.append(mat)
+	_forma_conteiner.size = Vector3(LARGURA_CONTEINER, ALTURA_CONTEINER, LARGURA_CONTEINER)
 
 
 func _criar_conteiner(col: int, andar: int, resistencia: int) -> void:
@@ -193,11 +183,11 @@ func _criar_conteiner(col: int, andar: int, resistencia: int) -> void:
 	corpo.collision_layer = 2
 	corpo.resistencia = resistencia
 
-	var malha := MeshInstance3D.new()
-	malha.mesh = _malha_conteiner
-	malha.material_override = _materiais_conteiner[(col * 3 + andar * 7) % _materiais_conteiner.size()]
-	malha.set_instance_shader_parameter("semente", randf() * 1000.0)
-	malha.set_instance_shader_parameter("variacao_cor", randf_range(-0.12, 0.12))
+	var variante: int = (col * 3 + andar * 7) % CENAS_CONTEINER.size()
+	var malha := CENAS_CONTEINER[variante].instantiate()
+	malha.rotation.y = PI * 0.5  # comprimento natural do modelo (Z) vira a largura visível (X)
+	malha.scale = Vector3.ONE * ESCALA_CONTEINER
+	malha.position.y = -ALTURA_CONTEINER * 0.5  # pivô do modelo fica na base, não no centro
 	corpo.add_child(malha)
 
 	var forma := CollisionShape3D.new()

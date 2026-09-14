@@ -1,5 +1,7 @@
 extends StaticBody3D
 ## Contêiner destrutível. O laser danifica; a bomba destrói na hora.
+## O visual é um modelo importado (CC0) — a colisão continua sendo uma
+## caixa simples independente, então a física do jogo não muda.
 
 @export var resistencia: int = 2
 
@@ -15,11 +17,26 @@ func destruir() -> void:
 	queue_free()
 
 func _piscar() -> void:
-	var malha := get_child(0) as MeshInstance3D
+	var malha := _encontrar_mesh(get_child(0))
 	if malha == null:
 		return
-	# "flash" é um parâmetro por instância do shader — cada contêiner tem o seu,
-	# mesmo compartilhando o mesmo ShaderMaterial com os outros.
-	malha.set_instance_shader_parameter("flash", 1.0)
+	var original := malha.material_override
+	var flash := StandardMaterial3D.new()
+	flash.albedo_color = Color(1, 0.8, 0.4)
+	flash.emission_enabled = true
+	flash.emission = Color(1, 0.8, 0.4)
+	flash.emission_energy_multiplier = 2.5
+	malha.material_override = flash
 	var t := create_tween()
-	t.tween_method(func(v: float): malha.set_instance_shader_parameter("flash", v), 1.0, 0.0, 0.25)
+	t.tween_interval(0.08)
+	t.tween_callback(func(): malha.material_override = original)
+
+
+func _encontrar_mesh(no: Node) -> MeshInstance3D:
+	if no is MeshInstance3D:
+		return no
+	for filho in no.get_children():
+		var achado := _encontrar_mesh(filho)
+		if achado:
+			return achado
+	return null
