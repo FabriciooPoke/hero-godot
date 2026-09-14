@@ -127,7 +127,18 @@ func _verificar_colisao(vel_antes: Vector3) -> void:
 			return
 		elif not de_lado and impacto >= velocidade_min_pouso:
 			gastar_energia(custo_energia_pouso)
+			_squash_pouso()
 			return
+
+
+## Achatamento rápido ao pousar com força — hoje o custo de energia era o
+## único sinal de que aconteceu algo. Puro squash/stretch, sem tocar em
+## rotação (não interfere no lean de voo).
+func _squash_pouso() -> void:
+	modelo.scale = Vector3(1.16, 0.76, 1.16)
+	var t := create_tween()
+	t.tween_property(modelo, "scale", Vector3.ONE, 0.24) \
+		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 
 
 func _processar_voo(delta: float) -> void:

@@ -33,8 +33,9 @@ func _ready() -> void:
 	jogador.morreu.connect(_ao_morrer)
 	jogador.colidiu_com_parede.connect(_ao_colidir_parede)
 	jogador.resgate_coletado.connect(_ao_coletar_resgate)
-	jogador.energia_mudou.connect(hud.atualizar_energia)
+	jogador.energia_mudou.connect(_ao_mudar_energia)
 	jogador.bombas_mudou.connect(hud.atualizar_bombas)
+	gerador.drone_destruido.connect(_ao_destruir_drone)
 	hud.jogar_pressionado.connect(iniciar_jogo)
 	hud.pausar_alternado.connect(_alternar_pausa)
 	hud.sair_para_menu_pressionado.connect(_sair_para_menu)
@@ -140,11 +141,28 @@ func _ao_coletar_resgate(total: int) -> void:
 		hud.mostrar_aviso("Todos resgatados! Suba até o helicóptero.")
 
 
+## Abaixo de 35% de energia a trilha ganha uma 2ª camada de tensão (pulso
+## grave) que cresce até o máximo perto de 0% — o mesmo limiar visual da
+## barra de energia ficar vermelha em HUD.gd, pra som e imagem contarem a
+## mesma história de perigo.
+func _ao_mudar_energia(v: float) -> void:
+	hud.atualizar_energia(v)
+	AudioManager.definir_intensidade(clampf(1.0 - v / 35.0, 0.0, 1.0))
+
+
+func _ao_destruir_drone(pontos_ganhos: int) -> void:
+	if estado != Estado.JOGANDO:
+		return
+	pontos += pontos_ganhos
+	hud.atualizar_pontos(pontos)
+
+
 func _ao_extrair() -> void:
 	if estado != Estado.JOGANDO:
 		return
 	estado = Estado.NIVEL_COMPLETO
 	AudioManager.tocar("nivel_completo")
+	camera.celebrar_extracao()
 
 	var bonus: int = int(jogador.energia * 10) + jogador.bombas * 80 + 1000
 	pontos += bonus

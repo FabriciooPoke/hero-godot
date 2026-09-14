@@ -6,6 +6,9 @@ extends Node3D
 ## mais longe = mais tenso. Veja DESIGN.md.
 
 signal nivel_pronto(altura_total: float)
+signal drone_destruido(pontos: int)
+
+const PONTOS_DRONE := 150
 
 const CENA_RESGATE := preload("res://scenes/Resgate.tscn")
 const CENA_DRONE := preload("res://scenes/Drone.tscn")
@@ -32,18 +35,24 @@ const ESCALA_CONTEINER := LARGURA_CONTEINER / (3.046667 * 0.27)
 ## vem só da luz da cena) — então dá pra tingir livremente sem perder detalhe.
 ## Paleta de cores reais de contêiner + duas variantes enferrujadas (tom
 ## terroso, mais ásperas/foscas) pra quebrar a monotonia visual da torre.
+## `zona`: 0 = base da torre (industrial/enferrujado), 1 = corpo (mix atual),
+## 2 = topo (tons frios/vívidos) — sinaliza progresso na subida sem precisar
+## de UI: o jogador SENTE que está ficando mais alto pela cor ao redor.
 const PALETA_CONTEINER := [
-	{"cor": Color(0.12, 0.36, 0.56), "rugosidade": 0.75, "metalico": 0.2},   # azul
-	{"cor": Color(0.55, 0.15, 0.13), "rugosidade": 0.75, "metalico": 0.2},   # vermelho
-	{"cor": Color(0.17, 0.33, 0.22), "rugosidade": 0.75, "metalico": 0.2},   # verde
-	{"cor": Color(0.68, 0.52, 0.15), "rugosidade": 0.75, "metalico": 0.2},   # amarelo mostarda
-	{"cor": Color(0.15, 0.42, 0.43), "rugosidade": 0.75, "metalico": 0.2},   # azul petróleo
-	{"cor": Color(0.52, 0.30, 0.14), "rugosidade": 0.95, "metalico": 0.05},  # enferrujado claro
-	{"cor": Color(0.36, 0.23, 0.15), "rugosidade": 0.95, "metalico": 0.0},   # enferrujado escuro
+	{"cor": Color(0.12, 0.36, 0.56), "rugosidade": 0.75, "metalico": 0.2, "zona": 1},   # azul
+	{"cor": Color(0.55, 0.15, 0.13), "rugosidade": 0.75, "metalico": 0.2, "zona": 0},   # vermelho
+	{"cor": Color(0.17, 0.33, 0.22), "rugosidade": 0.75, "metalico": 0.2, "zona": 1},   # verde
+	{"cor": Color(0.68, 0.52, 0.15), "rugosidade": 0.75, "metalico": 0.2, "zona": 0},   # amarelo mostarda
+	{"cor": Color(0.15, 0.42, 0.43), "rugosidade": 0.75, "metalico": 0.2, "zona": 2},   # azul petróleo
+	{"cor": Color(0.52, 0.30, 0.14), "rugosidade": 0.95, "metalico": 0.05, "zona": 0},  # enferrujado claro
+	{"cor": Color(0.36, 0.23, 0.15), "rugosidade": 0.95, "metalico": 0.0, "zona": 0},   # enferrujado escuro
+	{"cor": Color(0.55, 0.66, 0.72), "rugosidade": 0.6, "metalico": 0.3, "zona": 2},    # cinza-gelo (topo)
+	{"cor": Color(0.18, 0.56, 0.58), "rugosidade": 0.65, "metalico": 0.25, "zona": 2},  # ciano (topo)
 ]
 
 var _forma_conteiner: BoxShape3D
 var _materiais_conteiner: Array[StandardMaterial3D] = []
+var _indices_por_zona: Dictionary = {0: [], 1: [], 2: []}
 
 var nivel_atual: int = 1
 var altura_total: float = 0.0
@@ -108,10 +117,11 @@ func gerar(nivel: int) -> void:
 		var andar_aberto: bool = andar > 8 and andar % 17 == 0
 
 		if not andar_aberto:
+			var fracao_altura: float = float(andar) / float(andares)
 			for col in range(COLUNAS):
 				if col == col_vao or col == col_vao + 1:
 					continue
-				_criar_conteiner(col, andar, p.resistencia_conteiner)
+				_criar_conteiner(col, andar, p.resistencia_conteiner, fracao_altura)
 
 		# Estação de recarga — o "checkpoint" de energia
 		if andar > 2 and andar % int(p.recarga_cada) == 0:
@@ -202,15 +212,32 @@ func _preparar_recursos_conteiner() -> void:
 	_forma_conteiner = BoxShape3D.new()
 	_forma_conteiner.size = Vector3(LARGURA_CONTEINER, ALTURA_CONTEINER, LARGURA_CONTEINER)
 
-	for entrada in PALETA_CONTEINER:
+	for i in range(PALETA_CONTEINER.size()):
+		var entrada = PALETA_CONTEINER[i]
 		var mat := StandardMaterial3D.new()
 		mat.albedo_color = entrada.cor
 		mat.roughness = entrada.rugosidade
 		mat.metallic = entrada.metalico
 		_materiais_conteiner.append(mat)
+		_indices_por_zona[entrada.zona].append(i)
 
 
-func _criar_conteiner(col: int, andar: int, resistencia: int) -> void:
+## 0 = base (industrial/enferrujado), 1 = corpo, 2 = topo (frio/vívido).
+## As faixas de transição (±0.05) misturam um pouco da zona vizinha em vez
+## de cortar seco — a torre muda de "clima" aos poucos, não numa linha só.
+func _zona_da_altura(fracao: float, hash_local: int) -> int:
+	if fracao < 0.30:
+		return 0
+	if fracao < 0.35 and hash_local % 3 != 0:
+		return 0
+	if fracao < 0.68:
+		return 1
+	if fracao < 0.73 and hash_local % 3 != 0:
+		return 1
+	return 2
+
+
+func _criar_conteiner(col: int, andar: int, resistencia: int, fracao_altura: float) -> void:
 	var corpo := StaticBody3D.new()
 	corpo.set_script(preload("res://scripts/Conteiner.gd"))
 	corpo.position = Vector3(_x_da_coluna(col), andar * ALTURA_CONTEINER, 0)
@@ -224,7 +251,10 @@ func _criar_conteiner(col: int, andar: int, resistencia: int) -> void:
 	malha.position.y = -ALTURA_CONTEINER * 0.5  # pivô do modelo fica na base, não no centro
 	corpo.add_child(malha)
 
-	var cor_indice: int = (col * 5 + andar * 11) % _materiais_conteiner.size()
+	var hash_local: int = col * 5 + andar * 11
+	var zona: int = _zona_da_altura(fracao_altura, hash_local)
+	var indices: Array = _indices_por_zona[zona]
+	var cor_indice: int = indices[hash_local % indices.size()]
 	var mesh_instancia := _achar_mesh_instance(malha)
 	if mesh_instancia:
 		mesh_instancia.material_override = _materiais_conteiner[cor_indice]
@@ -253,6 +283,7 @@ func _criar_drone(col: int, andar: int) -> void:
 	var d := CENA_DRONE.instantiate()
 	d.position = Vector3(_x_da_coluna(col) + LARGURA_CONTEINER * 0.5, andar * ALTURA_CONTEINER, 0)
 	d.amplitude = LARGURA_CONTEINER * 0.8
+	d.destruido.connect(func(_pos): drone_destruido.emit(PONTOS_DRONE))
 	add_child(d)
 
 
