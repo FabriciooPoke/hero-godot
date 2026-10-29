@@ -70,25 +70,7 @@ impl Default for App {
 }
 
 fn pack_names() -> Vec<String> {
-    let dir = default_packs_dir();
-    let mut names: Vec<String> = std::fs::read_dir(&dir)
-        .map(|rd| {
-            rd.filter_map(|e| e.ok())
-                .filter(|e| e.path().is_dir())
-                .map(|e| {
-                    let toml = std::fs::read_to_string(e.path().join("pack.toml")).unwrap_or_default();
-                    toml.lines()
-                        .find_map(|l| {
-                            let l = l.trim();
-                            l.strip_prefix("name").and_then(|r| r.trim().strip_prefix('=')).map(|v| v.trim().trim_matches('"').to_string())
-                        })
-                        .unwrap_or_else(|| e.file_name().to_string_lossy().to_string())
-                })
-                .collect()
-        })
-        .unwrap_or_default();
-    names.sort_by_key(|n| n.to_lowercase());
-    names
+    bcd_core::list_styles(&default_packs_dir())
 }
 
 fn write_wav(path: &Path, data: &[[f32; 2]], sr: u32) -> Result<(), String> {

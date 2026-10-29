@@ -44,7 +44,7 @@ impl Layout {
             header: Rect::from_min_size(full.min, Vec2::new(full.width(), 60.0)),
             screen: Rect::from_min_size(at(36.0, 98.0), Vec2::new(640.0, 196.0)),
             vu: Rect::from_min_size(at(704.0, 98.0), Vec2::new(300.0, 196.0)),
-            style_center: at(170.0, 478.0),
+            style_center: at(176.0, 488.0),
             transient_center: at(445.0, 478.0),
             mix_center: at(690.0, 478.0),
             actions: Rect::from_min_size(at(852.0, 352.0), Vec2::new(160.0, 290.0)),
@@ -298,46 +298,79 @@ pub fn knob(
 }
 
 /// Seletor rotativo de Estilo ("cabeça de galinha") com os nomes ao redor.
-/// Devolve o índice clicado (no nome ou no knob, que avança para o próximo).
+/// Clique num nome para escolher; clique no knob para avançar; arraste o knob
+/// para girar. Até 8 estilos ficam num arco; mais que isso, numa elipse
+/// em volta do knob (cabe 12–14 nomes).
 pub fn style_selector(ui: &mut egui::Ui, p: &egui::Painter, c: Pos2, names: &[String], current: usize) -> Option<usize> {
     let n = names.len().max(1);
     let cur = current.min(n - 1);
-    text(p, c - Vec2::new(0.0, 108.0), "ESTILO", 16.0, CREAM, Align2::CENTER_CENTER);
-    let span = if n <= 1 { 0.0 } else { 250.0f32.min(36.0 * (n as f32 - 1.0)) };
+    let many = n > 8;
+    let (span, rx, ry, font) = if many { (330.0f32, 132.0f32, 96.0f32, 10.5f32) } else { (250.0f32.min(36.0 * (n as f32 - 1.0)), 86.0, 86.0, 12.0) };
     let angle = |i: usize| if n <= 1 { 0.0 } else { -span / 2.0 + span * i as f32 / (n as f32 - 1.0) };
+    let on_ellipse = |deg: f32| {
+        let a = (deg - 90.0).to_radians();
+        Pos2::new(c.x + rx * a.cos(), c.y + ry * a.sin())
+    };
+    text(p, c - Vec2::new(0.0, if many { 124.0 } else { 108.0 }), "ESTILO", 16.0, CREAM, Align2::CENTER_CENTER);
     let mut picked = None;
     for (i, name) in names.iter().enumerate().take(n) {
         let d = angle(i);
         let on = i == cur;
-        p.line_segment([polar(c, 54.0, d), polar(c, 64.0, d)], Stroke::new(2.5_f32, if on { ACCENT } else { CREAM }));
-        let pos = polar(c, 86.0, d);
-        let hit = Rect::from_center_size(pos, Vec2::new(84.0, 20.0));
+        p.line_segment([polar(c, 52.0, d), polar(c, 62.0, d)], Stroke::new(2.5_f32, if on { ACCENT } else { CREAM }));
+        let pos = on_ellipse(d);
+        let label = name.to_uppercase();
+        let w = (label.chars().count() as f32 * font * 0.62).max(36.0);
+        let hit = Rect::from_center_size(pos, Vec2::new(w, font + 8.0));
         let resp = ui.interact(hit, ui.id().with(("style", i)), Sense::click());
-        let hover = resp.hovered();
-        text(p, pos, &name.to_uppercase(), if on { 13.0 } else { 12.0 }, if on { ACCENT } else if hover { CREAM } else { DIM }, Align2::CENTER_CENTER);
+        if on {
+            p.rect_filled(hit.expand(2.0), 4.0, Color32::from_rgb(0x3A, 0x2C, 0x18));
+        }
+        let col = if on { ACCENT } else if resp.hovered() { CREAM } else { DIM };
+        text(p, pos, &label, if on { font + 1.0 } else { font }, col, Align2::CENTER_CENTER);
         if resp.clicked() {
             picked = Some(i);
+        }
+        if resp.hovered() {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
         }
     }
     if n <= 1 {
         text(p, c + Vec2::new(0.0, 74.0), "1 estilo instalado", 11.0, DIM, Align2::CENTER_CENTER);
     }
+    // knob: clique avança, arrastar gira
     let knob_rect = Rect::from_center_size(c, Vec2::splat(96.0));
-    let resp = ui.interact(knob_rect, ui.id().with("style_knob"), Sense::click());
+    let resp = ui.interact(knob_rect, ui.id().with("style_knob"), Sense::click_and_drag());
     if resp.clicked() && n > 1 {
         picked = Some((cur + 1) % n);
     }
-    // knob cabeça de galinha
+    if resp.dragged() && n > 1 {
+        let acc_id = ui.id().with("style_drag");
+        let mut acc: f32 = ui.data(|d| d.get_temp(acc_id).unwrap_or(0.0));
+        acc += resp.drag_delta().x - resp.drag_delta().y;
+        let step = 18.0;
+        if acc.abs() >= step {
+            let dir = acc.signum() as i32;
+            acc -= dir as f32 * step;
+            let next = (cur as i32 + dir).clamp(0, n as i32 - 1) as usize;
+            if next != cur {
+                picked = Some(next);
+            }
+        }
+        ui.data_mut(|d| d.insert_temp(acc_id, acc));
+    }
+    if resp.hovered() {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::Grab);
+    }
     let d = angle(cur).to_radians();
     p.circle_filled(c, 44.0, Color32::from_rgb(0x14, 0x13, 0x12));
     p.circle_stroke(c, 44.0, Stroke::new(1.5_f32, Color32::from_rgb(0x05, 0x05, 0x05)));
     let rot = |x: f32, y: f32| Pos2::new(c.x + x * d.cos() - y * d.sin(), c.y + x * d.sin() + y * d.cos());
-    let body: Vec<Pos2> = [(-15.0, 36.0), (-11.0, -50.0), (-5.0, -58.0), (5.0, -58.0), (11.0, -50.0), (15.0, 36.0), (8.0, 44.0), (-8.0, 44.0)]
+    let body: Vec<Pos2> = [(-15.0, 36.0), (-11.0, -46.0), (-5.0, -54.0), (5.0, -54.0), (11.0, -46.0), (15.0, 36.0), (8.0, 44.0), (-8.0, 44.0)]
         .iter()
         .map(|&(x, y)| rot(x, y))
         .collect();
     p.add(Shape::convex_polygon(body, Color32::from_rgb(0x28, 0x26, 0x23), Stroke::new(2.0_f32, Color32::from_rgb(0x0E, 0x0D, 0x0C))));
-    p.line_segment([rot(0.0, -52.0), rot(0.0, -24.0)], Stroke::new(4.5_f32, CREAM));
+    p.line_segment([rot(0.0, -48.0), rot(0.0, -22.0)], Stroke::new(4.5_f32, CREAM));
     p.circle_filled(c, 6.0, Color32::from_rgb(0x3A, 0x38, 0x35));
     picked
 }

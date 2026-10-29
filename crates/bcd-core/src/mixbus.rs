@@ -120,6 +120,11 @@ impl MixBus {
         }
     }
 
+    /// Ganho automático atual (linear).
+    pub fn gain(&self) -> f32 {
+        if self.auto_gain { db_to_lin(self.gain_db) } else { 1.0 }
+    }
+
     /// Processa uma amostra estéreo. Devolve (esquerda, direita, envio de reverb).
     #[inline]
     pub fn process(&mut self, l: f32, r: f32, transient: f32) -> (f32, f32, f32) {

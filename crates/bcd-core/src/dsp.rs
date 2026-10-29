@@ -159,27 +159,43 @@ impl Compressor {
 }
 
 /// Transient shaper: compara um envelope rápido com um lento e realça o ataque.
+/// Em 100% o ataque sobe até +14 dB e a cauda desce até -6 dB; o ganho é
+/// suavizado para não distorcer os graves.
 #[derive(Clone, Debug)]
 pub struct TransientShaper {
     fast: Envelope,
     slow: Envelope,
-    /// 0..1 — quanto realçar (até +9 dB no ataque) e quanto encurtar a cauda.
+    g_db: f32,
+    up: f32,
+    down: f32,
+    /// 0..1 (pode passar de 1 para efeito extremo)
     pub amount: f32,
 }
 
 impl TransientShaper {
     pub fn new(sr: f32) -> Self {
-        Self { fast: Envelope::new(sr, 0.5, 25.0), slow: Envelope::new(sr, 25.0, 200.0), amount: 0.5 }
+        let k = |ms: f32| 1.0 - (-1.0 / (ms * 1e-3 * sr)).exp();
+        Self {
+            fast: Envelope::new(sr, 0.2, 20.0),
+            slow: Envelope::new(sr, 18.0, 220.0),
+            g_db: 0.0,
+            up: k(0.3),
+            down: k(8.0),
+            amount: 0.5,
+        }
     }
     #[inline]
     pub fn gain(&mut self, l: f32, r: f32) -> f32 {
         let x = l.abs().max(r.abs());
         let f = self.fast.process(x);
         let s = self.slow.process(x);
-        let diff = (lin_to_db(f) - lin_to_db(s)).clamp(-12.0, 12.0);
-        let attack = diff.max(0.0) / 12.0; // 0..1 durante o ataque
-        let sustain = (-diff).max(0.0) / 12.0; // 0..1 na cauda
-        db_to_lin(self.amount * (9.0 * attack - 3.0 * sustain))
+        let diff = lin_to_db(f) - lin_to_db(s);
+        let attack = (diff / 8.0).clamp(0.0, 1.0).powf(0.8);
+        let sustain = (-diff / 10.0).clamp(0.0, 1.0);
+        let target = self.amount * (14.0 * attack - 6.0 * sustain);
+        let k = if target > self.g_db { self.up } else { self.down };
+        self.g_db += (target - self.g_db) * k;
+        db_to_lin(self.g_db)
     }
 }
 

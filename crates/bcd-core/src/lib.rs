@@ -10,4 +10,4 @@ pub mod pack;
 
 pub use detect::{analyze_song, Detector, Hit};
 pub use engine::{process_offline, Engine, Meters, Params, Prepared};
-pub use pack::{default_packs_dir, load_pack, scan_library, Library, Pack, Piece};
+pub use pack::{default_packs_dir, list_styles, load_pack, scan_library, Library, Pack, Piece};

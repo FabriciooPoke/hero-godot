@@ -156,6 +156,8 @@ impl Default for ChainSettings {
 #[derive(Clone, Debug, Deserialize)]
 #[serde(default)]
 pub struct PieceSettings {
+    /// pasta dos samples desta peça, relativa ao `kit` (ou ao pack)
+    pub folder: Option<String>,
     pub gain_db: f32,
     /// quanto deste sample vai para o reverb (0..1)
     pub reverb_send: f32,
@@ -163,7 +165,7 @@ pub struct PieceSettings {
 
 impl Default for PieceSettings {
     fn default() -> Self {
-        Self { gain_db: 0.0, reverb_send: 0.3 }
+        Self { folder: None, gain_db: 0.0, reverb_send: 0.3 }
     }
 }
 
@@ -183,6 +185,10 @@ pub struct PackManifest {
     pub version: Option<String>,
     pub author: Option<String>,
     pub description: Option<String>,
+    /// kit de samples compartilhado (pasta relativa ao pack, ex.: "../_Kits/BC Pop Country")
+    pub kit: Option<String>,
+    /// posição no seletor de estilos (menor primeiro)
+    pub order: Option<i32>,
     pub chain: ChainSettings,
     pub pieces: PieceTable,
 }
@@ -198,13 +204,15 @@ pub struct Layer {
 
 #[derive(Clone, Debug, Default)]
 pub struct PieceKit {
-    pub layers: Vec<Layer>,
+    /// compartilhado entre estilos que usam o mesmo kit
+    pub layers: Arc<Vec<Layer>>,
     pub settings: PieceSettings,
 }
 
 #[derive(Clone, Debug)]
 pub struct Pack {
     pub name: String,
+    pub order: i32,
     pub version: String,
     pub dir: PathBuf,
     pub chain: ChainSettings,
@@ -352,6 +360,12 @@ fn load_piece_dir(dir: &Path, sr: u32) -> Result<Vec<Layer>, PackError> {
 
 /// Carrega um pack de uma pasta, convertendo os samples para `sr`.
 pub fn load_pack(dir: &Path, sr: u32) -> Result<Pack, PackError> {
+    load_pack_cached(dir, sr, &mut std::collections::HashMap::new())
+}
+
+type LayerCache = std::collections::HashMap<PathBuf, Arc<Vec<Layer>>>;
+
+fn load_pack_cached(dir: &Path, sr: u32, cache: &mut LayerCache) -> Result<Pack, PackError> {
     let manifest_path = dir.join("pack.toml");
     let manifest: PackManifest = if manifest_path.exists() {
         let text = std::fs::read_to_string(&manifest_path).map_err(|e| PackError::Io(manifest_path.clone(), e))?;
@@ -375,13 +389,35 @@ pub fn load_pack(dir: &Path, sr: u32) -> Result<Pack, PackError> {
             Piece::TomLo => manifest.pieces.tom_lo.clone(),
         }
         .unwrap_or_default();
-        let sub = entries.iter().find(|p| {
-            let n = p.file_name().map(|n| n.to_string_lossy().to_lowercase().replace([' ', '-'], "_")).unwrap_or_default();
-            piece.folder_aliases().iter().any(|a| *a == n)
+        let base = manifest.kit.as_ref().map(|k| dir.join(k)).unwrap_or_else(|| dir.to_path_buf());
+        let explicit = settings.folder.as_ref().map(|f| base.join(f)).filter(|p| p.is_dir());
+        let base_entries: Vec<PathBuf> = if manifest.kit.is_some() {
+            std::fs::read_dir(&base).map(|rd| rd.filter_map(|e| e.ok().map(|e| e.path())).filter(|p| p.is_dir()).collect()).unwrap_or_default()
+        } else {
+            entries.clone()
+        };
+        let sub = explicit.or_else(|| {
+            base_entries
+                .iter()
+                .find(|p| {
+                    let n = p.file_name().map(|n| n.to_string_lossy().to_lowercase().replace([' ', '-'], "_")).unwrap_or_default();
+                    piece.folder_aliases().iter().any(|a| *a == n)
+                })
+                .cloned()
         });
         let layers = match sub {
-            Some(d) => load_piece_dir(d, sr)?,
-            None => Vec::new(),
+            Some(d) => {
+                let key = d.canonicalize().unwrap_or(d.clone());
+                match cache.get(&key) {
+                    Some(l) => l.clone(),
+                    None => {
+                        let l = Arc::new(load_piece_dir(&d, sr)?);
+                        cache.insert(key, l.clone());
+                        l
+                    }
+                }
+            }
+            None => Arc::new(Vec::new()),
         };
         if layers.is_empty() {
             warnings.push(format!("{}: sem samples (o original segue sem reforço)", piece.label_pt()));
@@ -389,6 +425,7 @@ pub fn load_pack(dir: &Path, sr: u32) -> Result<Pack, PackError> {
         pieces[piece.index()] = PieceKit { layers, settings };
     }
     Ok(Pack {
+        order: manifest.order.unwrap_or(1000),
         name: manifest.name.unwrap_or(folder_name),
         version: manifest.version.unwrap_or_else(|| "1.0".into()),
         dir: dir.to_path_buf(),
@@ -417,21 +454,49 @@ impl Library {
 pub fn scan_library(dir: &Path, sr: u32) -> Library {
     let mut lib = Library { dir: dir.to_path_buf(), ..Default::default() };
     let mut dirs: Vec<PathBuf> = match std::fs::read_dir(dir) {
-        Ok(rd) => rd.filter_map(|e| e.ok().map(|e| e.path())).filter(|p| p.is_dir()).collect(),
+        Ok(rd) => rd
+            .filter_map(|e| e.ok().map(|e| e.path()))
+            .filter(|p| p.is_dir())
+            .filter(|p| !p.file_name().map(|n| n.to_string_lossy().starts_with(['_', '.'])).unwrap_or(true))
+            .collect(),
         Err(e) => {
             lib.errors.push(format!("Pasta de packs não encontrada ({}): {e}", dir.display()));
             return lib;
         }
     };
     dirs.sort_by_key(|p| natural_key(&p.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default()));
+    let mut cache = LayerCache::new();
     for d in dirs {
-        match load_pack(&d, sr) {
+        match load_pack_cached(&d, sr, &mut cache) {
             Ok(p) if p.sample_count() > 0 => lib.packs.push(Arc::new(p)),
             Ok(p) => lib.errors.push(format!("{}: nenhuma pasta de samples encontrada", p.name)),
             Err(e) => lib.errors.push(e.to_string()),
         }
     }
+    lib.packs.sort_by(|a, b| a.order.cmp(&b.order).then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase())));
     lib
+}
+
+/// Lista os estilos (nome, ordem) sem carregar os samples — rápido, para menus.
+pub fn list_styles(dir: &Path) -> Vec<String> {
+    let mut v: Vec<(i32, String)> = std::fs::read_dir(dir)
+        .map(|rd| {
+            rd.filter_map(|e| e.ok().map(|e| e.path()))
+                .filter(|p| p.is_dir())
+                .filter(|p| !p.file_name().map(|n| n.to_string_lossy().starts_with(['_', '.'])).unwrap_or(true))
+                .map(|p| {
+                    let m: PackManifest = std::fs::read_to_string(p.join("pack.toml"))
+                        .ok()
+                        .and_then(|t| toml::from_str(&t).ok())
+                        .unwrap_or_default();
+                    let folder = p.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+                    (m.order.unwrap_or(1000), m.name.unwrap_or(folder))
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    v.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.to_lowercase().cmp(&b.1.to_lowercase())));
+    v.into_iter().map(|(_, n)| n).collect()
 }
 
 #[cfg(test)]

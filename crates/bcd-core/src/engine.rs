@@ -98,6 +98,8 @@ struct Voice {
 
 struct Chain {
     bus: MixBus,
+    /// Transient Design depois da compressão (o punch sobrevive até a saída)
+    punch: TransientShaper,
     limiter: Limiter,
     glue: Compressor,
     smash: Compressor,
@@ -112,6 +114,7 @@ impl Chain {
     fn new(sr: f32, s: &ChainSettings) -> Self {
         Self {
             bus: MixBus::new(sr, s),
+            punch: TransientShaper::new(sr),
             limiter: Limiter::new(sr, s.ceiling_db),
             glue: Compressor::new(sr, s.comp_threshold_db, s.comp_ratio, s.comp_attack_ms, s.comp_release_ms, 0.0),
             smash: Compressor::new(sr, -32.0, 10.0, 0.5, 70.0, 18.0),
@@ -160,6 +163,11 @@ pub struct Engine {
     out_env: Envelope,
     /// batidas já analisadas (modo offline); quando presente, o detector em tempo real é ignorado
     preset_hits: bool,
+    // nivelamento do lado original no Mix
+    dry_lvl: Envelope,
+    wet_lvl: Envelope,
+    match_db: f32,
+    match_k: f32,
 }
 
 impl Engine {
@@ -183,6 +191,10 @@ impl Engine {
             in_env: Envelope::new(sr, 30.0, 300.0),
             out_env: Envelope::new(sr, 30.0, 300.0),
             preset_hits: false,
+            dry_lvl: Envelope::new(sr, 400.0, 400.0),
+            wet_lvl: Envelope::new(sr, 400.0, 400.0),
+            match_db: 0.0,
+            match_k: 1.0 - (-1.0 / (1.0 * sr)).exp(),
         }
     }
 
@@ -296,11 +308,8 @@ impl Engine {
 
             let chain = if has_pack { &mut self.prepared.chains[style] } else { &mut self.prepared.fallback };
 
-            // mixagem completa por faixas (todas as peças)
-            let (ml, mr, body_send) = chain.bus.process(dry[0], dry[1], transient);
-            let o = [ml * chain.orig_gain, mr * chain.orig_gain];
-
-            // reforço com samples do pack (opcional, pelo detector)
+            // reforço com samples do pack (pela análise/detector), somado à LR
+            // antes da mix: o estilo trata original e samples juntos
             let mut sm = [0.0f32; 2];
             let mut send = 0.0f32;
             if let Some(pack) = pack.as_ref() {
@@ -315,7 +324,17 @@ impl Engine {
                     true
                 });
             }
-            let mut bus = [o[0] + sm[0] * chain.samples_gain, o[1] + sm[1] * chain.samples_gain];
+            // samples entram no nível da gravação (o ganho automático os leva
+            // de volta ao nível nativo do pack × samples_db)
+            // mais Transient Design = mais reforço (até +6 dB)
+            let td_boost = db_to_lin(transient * 9.0 - 3.0);
+            let sg = chain.samples_gain * td_boost / chain.bus.gain().max(1e-3);
+            let src_l = dry[0] * chain.orig_gain + sm[0] * sg;
+            let src_r = dry[1] * chain.orig_gain + sm[1] * sg;
+
+            // mixagem completa por faixas (todas as peças)
+            let (ml, mr, body_send) = chain.bus.process(src_l, src_r, transient);
+            let mut bus = [ml, mr];
 
             // cola + compressão paralela
             let gg = chain.glue.gain(bus[0], bus[1]);
@@ -324,19 +343,29 @@ impl Engine {
             bus = [bus[0] * gg + bus[0] * gs * p, bus[1] * gg + bus[1] * gs * p];
 
             // reverb (sala da caixa e dos tons + samples)
-            let rv_in = send * chain.samples_gain + body_send * chain.orig_gain;
+            let rv_in = send * chain.samples_gain + body_send;
             let (rl, rr) = chain.reverb.process(rv_in);
             bus[0] += rl * chain.s.reverb_return;
             bus[1] += rr * chain.s.reverb_return;
 
             // saturação e saída
-            let (wl, wr) = chain.limiter.process(
-                saturate(bus[0] * chain.out_gain, chain.s.drive),
-                saturate(bus[1] * chain.out_gain, chain.s.drive),
-            );
-            let wet = [wl, wr];
-            let ol = (dry[0] * (1.0 - mix) + wet[0] * mix) * out_gain;
-            let or = (dry[1] * (1.0 - mix) + wet[1] * mix) * out_gain;
+            chain.punch.amount = transient;
+            // compensa parte do volume que o punch acrescenta (comparação justa)
+            let pg = chain.punch.gain(bus[0], bus[1]) * db_to_lin(-4.0 * transient);
+            bus = [bus[0] * pg, bus[1] * pg];
+            let wet = [saturate(bus[0] * chain.out_gain, chain.s.drive), saturate(bus[1] * chain.out_gain, chain.s.drive)];
+            // Mix: original nivelado com o processado + transição de potência
+            // constante, para cada posição soar como mistura real dos dois
+            let dl = self.dry_lvl.process(0.5 * (dry[0] * dry[0] + dry[1] * dry[1])).sqrt();
+            let wl = self.wet_lvl.process(0.5 * (wet[0] * wet[0] + wet[1] * wet[1])).sqrt();
+            if dl > 1e-4 && wl > 1e-4 {
+                let want = (lin_to_db(wl) - lin_to_db(dl)).clamp(-6.0, 24.0);
+                self.match_db += (want - self.match_db) * self.match_k;
+            }
+            let dm = db_to_lin(self.match_db);
+            let (a, b) = ((mix * std::f32::consts::FRAC_PI_2).cos(), (mix * std::f32::consts::FRAC_PI_2).sin());
+            // limitador final protege a mistura toda
+            let (ol, or) = chain.limiter.process((dry[0] * dm * a + wet[0] * b) * out_gain, (dry[1] * dm * a + wet[1] * b) * out_gain);
             left[i] = ol;
             right[i] = or;
             out_peak = out_peak.max(self.out_env.process(ol.abs().max(or.abs())));
