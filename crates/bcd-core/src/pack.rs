@@ -99,6 +99,21 @@ pub struct ChainSettings {
     /// nível dos samples do pack na saída processada
     pub samples_db: f32,
     pub output_db: f32,
+    /// ganho por faixa (dB): grave/bumbo, corpo (caixa/tons), ataque, ar/pratos
+    pub kick_db: f32,
+    pub body_db: f32,
+    pub attack_db: f32,
+    pub air_db: f32,
+    /// 0..1 — quanto as faixas são comprimidas
+    pub band_comp: f32,
+    /// abertura estéreo dos pratos (1 = original)
+    pub width: f32,
+    /// nivela automaticamente qualquer gravação antes da mix
+    pub auto_gain: bool,
+    /// nível de trabalho do ganho automático (dBFS, média)
+    pub target_db: f32,
+    /// teto do limitador de saída (dBFS)
+    pub ceiling_db: f32,
 }
 
 impl Default for ChainSettings {
@@ -122,9 +137,18 @@ impl Default for ChainSettings {
             reverb_return: 0.25,
             reverb_send_original: 0.15,
             drive: 1.3,
-            original_db: -4.0,
-            samples_db: 0.0,
+            original_db: 0.0,
+            samples_db: -8.0,
             output_db: 0.0,
+            kick_db: 2.0,
+            body_db: 0.5,
+            attack_db: 1.5,
+            air_db: 0.5,
+            band_comp: 0.5,
+            width: 1.2,
+            auto_gain: true,
+            target_db: -22.0,
+            ceiling_db: -1.0,
         }
     }
 }

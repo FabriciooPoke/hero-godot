@@ -5,6 +5,7 @@
 pub mod detect;
 pub mod dsp;
 pub mod engine;
+pub mod mixbus;
 pub mod pack;
 
 pub use detect::{Detector, Hit};

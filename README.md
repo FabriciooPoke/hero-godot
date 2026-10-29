@@ -32,7 +32,7 @@ Peça sem pasta = o original segue tratado, sem reforço de sample.
 1. O detector acha cada batida na LR (bumbo, caixa, tom agudo, tom grave) e mede a força.
 2. O áudio é atrasado ~40 ms (o host compensa sozinho).
 3. Cada batida dispara o sample do pack na camada certa de dinâmica, alinhado com o original.
-4. Original + samples → Transient Design (abaixo de 4 kHz) → compressão + paralela → reverb → saturação.
+4. Mixagem completa da LR em 4 faixas (grave/bumbo, corpo, ataque, pratos) com Transient Design, compressão e ganho por faixa, abertura dos pratos → reforço opcional de samples → cola + paralela → reverb → saturação → limitador.
 5. Mix entre o original e o resultado.
 
 ## Desenvolvimento

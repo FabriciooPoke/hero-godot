@@ -12,6 +12,7 @@
 
 use crate::detect::{Detector, Hit};
 use crate::dsp::*;
+use crate::mixbus::{Limiter, MixBus};
 use crate::pack::{ChainSettings, Library, Pack, Piece};
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
@@ -96,9 +97,8 @@ struct Voice {
 }
 
 struct Chain {
-    eq: [[Biquad; 3]; 2],
-    xover: [Crossover; 2],
-    shaper: TransientShaper,
+    bus: MixBus,
+    limiter: Limiter,
     glue: Compressor,
     smash: Compressor,
     reverb: Reverb,
@@ -110,17 +110,9 @@ struct Chain {
 
 impl Chain {
     fn new(sr: f32, s: &ChainSettings) -> Self {
-        let band = |_: usize| {
-            [
-                Biquad::low_shelf(sr, s.low_shelf_hz, s.low_shelf_db),
-                Biquad::peaking(sr, s.mid_hz, s.mid_db, s.mid_q),
-                Biquad::high_shelf(sr, s.high_shelf_hz, s.high_shelf_db),
-            ]
-        };
         Self {
-            eq: [band(0), band(1)],
-            xover: [Crossover::new(sr, 4000.0), Crossover::new(sr, 4000.0)],
-            shaper: TransientShaper::new(sr),
+            bus: MixBus::new(sr, s),
+            limiter: Limiter::new(sr, s.ceiling_db),
             glue: Compressor::new(sr, s.comp_threshold_db, s.comp_ratio, s.comp_attack_ms, s.comp_release_ms, 0.0),
             smash: Compressor::new(sr, -32.0, 10.0, 0.5, 70.0, 18.0),
             reverb: Reverb::new(sr, s.reverb_decay_s, s.reverb_predelay_ms, s.reverb_damping_hz),
@@ -291,16 +283,11 @@ impl Engine {
 
             let chain = if has_pack { &mut self.prepared.chains[style] } else { &mut self.prepared.fallback };
 
-            // original com EQ do estilo
-            let mut o = [dry[0], dry[1]];
-            for (oc, eq) in o.iter_mut().zip(chain.eq.iter_mut()) {
-                for b in eq.iter_mut() {
-                    *oc = b.process(*oc);
-                }
-                *oc *= chain.orig_gain;
-            }
+            // mixagem completa por faixas (todas as peças)
+            let (ml, mr, body_send) = chain.bus.process(dry[0], dry[1], transient);
+            let o = [ml * chain.orig_gain, mr * chain.orig_gain];
 
-            // samples
+            // reforço com samples do pack (opcional, pelo detector)
             let mut sm = [0.0f32; 2];
             let mut send = 0.0f32;
             if let Some(pack) = pack.as_ref() {
@@ -317,30 +304,24 @@ impl Engine {
             }
             let mut bus = [o[0] + sm[0] * chain.samples_gain, o[1] + sm[1] * chain.samples_gain];
 
-            // Transient Design: só abaixo de 4 kHz (bumbo, caixa, tons)
-            chain.shaper.amount = transient;
-            let (lo_l, hi_l) = chain.xover[0].split(bus[0]);
-            let (lo_r, hi_r) = chain.xover[1].split(bus[1]);
-            let g = chain.shaper.gain(lo_l, lo_r);
-            bus = [lo_l * g + hi_l, lo_r * g + hi_r];
-
             // cola + compressão paralela
             let gg = chain.glue.gain(bus[0], bus[1]);
             let gs = chain.smash.gain(bus[0], bus[1]);
             let p = chain.s.parallel;
             bus = [bus[0] * gg + bus[0] * gs * p, bus[1] * gg + bus[1] * gs * p];
 
-            // reverb
-            let rv_in = send * chain.samples_gain + 0.5 * (o[0] + o[1]) * chain.s.reverb_send_original;
+            // reverb (sala da caixa e dos tons + samples)
+            let rv_in = send * chain.samples_gain + body_send * chain.orig_gain;
             let (rl, rr) = chain.reverb.process(rv_in);
             bus[0] += rl * chain.s.reverb_return;
             bus[1] += rr * chain.s.reverb_return;
 
             // saturação e saída
-            let wet = [
+            let (wl, wr) = chain.limiter.process(
                 saturate(bus[0] * chain.out_gain, chain.s.drive),
                 saturate(bus[1] * chain.out_gain, chain.s.drive),
-            ];
+            );
+            let wet = [wl, wr];
             let ol = (dry[0] * (1.0 - mix) + wet[0] * mix) * out_gain;
             let or = (dry[1] * (1.0 - mix) + wet[1] * mix) * out_gain;
             left[i] = ol;
