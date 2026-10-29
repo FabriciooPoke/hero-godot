@@ -1,0 +1,126 @@
+-- The C compiler identification is AppleClang 15.0.0.15000309
+-- The CXX compiler identification is AppleClang 15.0.0.15000309
+-- The OBJC compiler identification is AppleClang 15.0.0.15000309
+-- The OBJCXX compiler identification is AppleClang 15.0.0.15000309
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Detecting OBJC compiler ABI info
+-- Detecting OBJC compiler ABI info - done
+-- Check for working OBJC compiler: /usr/bin/cc - skipped
+-- Detecting OBJCXX compiler ABI info
+-- Detecting OBJCXX compiler ABI info - done
+-- Check for working OBJCXX compiler: /usr/bin/c++ - skipped
+-- clap-wrapper: CLAP_WRAPPER_VERSION is 0.17.0
+-- clap-wrapper: Building with C++ standard 17
+-- cmake-wrapper: using std::filesystem as macOS deployment it 11.0; using std::filesystem
+-- clap-wrapper: using gcc/llvm-clang compile options
+-- clap-wrapper: Warnings are Errors
+-- clap-wrapper: source dir is /Users/runner/work/hero-godot/hero-godot/build-au/_deps/clapwrapper-src, platform is MAC
+-- clap-wrapper: including CPM
+-- CPM: Adding package clap@1.2.10 (1.2.10)
+-- Populating clap
+-- Configuring done (0.1s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/runner/work/hero-godot/hero-godot/build-au/_deps/clap-subbuild
+[ 11%] Creating directories for 'clap-populate'
+[ 22%] Performing download step (git clone) for 'clap-populate'
+Cloning into 'clap'...
+HEAD is now at 195b42a CLAP 1.2.10
+[ 33%] Performing update step for 'clap-populate'
+-- Already at requested tag: 1.2.10
+[ 44%] No patch step for 'clap-populate'
+[ 55%] No configure step for 'clap-populate'
+[ 66%] No build step for 'clap-populate'
+[ 77%] No install step for 'clap-populate'
+[ 88%] No test step for 'clap-populate'
+[100%] Completed 'clap-populate'
+[100%] Built target clap-populate
+-- clap-wrapper: Configuring clap sdk
+-- CLAP version: 1.2.10
+-- clap-wrapper: using included fmt library since no fmt-header-only available
+-- clap-wrapper: including CPM
+-- CPM: Adding package AudioUnitSDK@ (AudioUnitSDK-1.1.0)
+-- Populating audiounitsdk
+-- Configuring done (0.1s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/runner/work/hero-godot/hero-godot/build-au/_deps/audiounitsdk-subbuild
+[ 11%] Creating directories for 'audiounitsdk-populate'
+[ 22%] Performing download step (git clone) for 'audiounitsdk-populate'
+Cloning into 'AudioUnitSDK'...
+HEAD is now at 53a9a20 AudioUnitSDK - version 1.1.0
+[ 33%] Performing update step for 'audiounitsdk-populate'
+-- Already at requested tag: AudioUnitSDK-1.1.0
+[ 44%] No patch step for 'audiounitsdk-populate'
+[ 55%] No configure step for 'audiounitsdk-populate'
+[ 66%] No build step for 'audiounitsdk-populate'
+[ 77%] No install step for 'audiounitsdk-populate'
+[ 88%] No test step for 'audiounitsdk-populate'
+[100%] Completed 'audiounitsdk-populate'
+[100%] Built target audiounitsdk-populate
+-- clap-wrapper: configuring auv2 sdk from /Users/runner/work/hero-godot/hero-godot/build-au/cpm/AudioUnitSDK
+-- clap-wrapper: building auv2 based on clap /Users/runner/work/hero-godot/hero-godot/target/bundled/BC Drums.clap
+-- clap-wrapper: Adding AUV2 Wrapper to target bcdrums_auv2 generating 'BC Drums.component'
+-- clap-wrapper: including embedded clap in target bcdrums_auv2
+-- Configuring done (8.8s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/runner/work/hero-godot/hero-godot/build-au
+[  3%] Building CXX object _deps/clapwrapper-build/CMakeFiles/clap-wrapper-shared-detail.dir/src/clap_proxy.cpp.o
+[  6%] Building CXX object _deps/clapwrapper-build/CMakeFiles/clap-wrapper-shared-detail.dir/src/detail/shared/sha1.cpp.o
+[ 10%] Building CXX object _deps/clapwrapper-build/CMakeFiles/clap-wrapper-shared-detail.dir/src/detail/shared/util.cpp.o
+[ 13%] Building CXX object _deps/clapwrapper-build/CMakeFiles/clap-wrapper-shared-detail.dir/src/detail/clap/fsutil.cpp.o
+[ 17%] Building CXX object _deps/clapwrapper-build/CMakeFiles/clap-wrapper-shared-detail.dir/src/detail/clap/preset_discovery.cpp.o
+[ 20%] Building OBJCXX object _deps/clapwrapper-build/CMakeFiles/clap-wrapper-shared-detail.dir/src/detail/clap/mac_helpers.mm.o
+[ 24%] Linking CXX static library libclap-wrapper-shared-detail.a
+[ 24%] Built target clap-wrapper-shared-detail
+[ 27%] Building CXX object CMakeFiles/base-sdk-auv2.dir/cpm/AudioUnitSDK/src/AudioUnitSDK/AUBase.cpp.o
+[ 31%] Building CXX object CMakeFiles/base-sdk-auv2.dir/cpm/AudioUnitSDK/src/AudioUnitSDK/AUBuffer.cpp.o
+[ 34%] Building CXX object CMakeFiles/base-sdk-auv2.dir/cpm/AudioUnitSDK/src/AudioUnitSDK/AUBufferAllocator.cpp.o
+[ 37%] Building CXX object CMakeFiles/base-sdk-auv2.dir/cpm/AudioUnitSDK/src/AudioUnitSDK/AUEffectBase.cpp.o
+[ 41%] Building CXX object CMakeFiles/base-sdk-auv2.dir/cpm/AudioUnitSDK/src/AudioUnitSDK/AUInputElement.cpp.o
+[ 44%] Building CXX object CMakeFiles/base-sdk-auv2.dir/cpm/AudioUnitSDK/src/AudioUnitSDK/AUMIDIBase.cpp.o
+[ 48%] Building CXX object CMakeFiles/base-sdk-auv2.dir/cpm/AudioUnitSDK/src/AudioUnitSDK/AUMIDIEffectBase.cpp.o
+[ 51%] Building CXX object CMakeFiles/base-sdk-auv2.dir/cpm/AudioUnitSDK/src/AudioUnitSDK/AUOutputElement.cpp.o
+[ 55%] Building CXX object CMakeFiles/base-sdk-auv2.dir/cpm/AudioUnitSDK/src/AudioUnitSDK/AUPlugInDispatch.cpp.o
+[ 58%] Building CXX object CMakeFiles/base-sdk-auv2.dir/cpm/AudioUnitSDK/src/AudioUnitSDK/AUScopeElement.cpp.o
+[ 62%] Building CXX object CMakeFiles/base-sdk-auv2.dir/cpm/AudioUnitSDK/src/AudioUnitSDK/ComponentBase.cpp.o
+[ 65%] Building CXX object CMakeFiles/base-sdk-auv2.dir/cpm/AudioUnitSDK/src/AudioUnitSDK/MusicDeviceBase.cpp.o
+[ 68%] Linking CXX static library libbase-sdk-auv2.a
+[ 68%] Built target base-sdk-auv2
+[ 72%] Building CXX object CMakeFiles/bcdrums_auv2-build-helper.dir/_deps/clapwrapper-src/src/detail/auv2/build-helper/build-helper.cpp.o
+[ 75%] Linking CXX executable bcdrums_auv2-build-helper
+clap-wrapper: auv2 configuration output dir is /Users/runner/work/hero-godot/hero-godot/build-au/bcdrums_auv2-build-helper-output
+/Users/runner/work/hero-godot/hero-godot/build-au/bcdrums_auv2-build-helper: replacing existing signature
+clap-wrapper: auv2 configuration tool starting
+  - CLAP is a directory. Assuming bundle
+  - building information from CLAP directly
+  - source clap: '/Users/runner/work/hero-godot/hero-godot/target/bundled/BC Drums.clap'
+  - clap file produced 1 units
+  - generating auv2_Info.plist from auv2_infoplist_top
+    + BC Drums (aufx/BcDr) by BC Studio (BCst)
+    + Using bundle version 0.1.0
+    + Calculating version from bundle version 0 1 0
+  - auv2_Info.plist generated
+  - generating generated_entrypoints.hxx
+    + BC Drums entry wrapAsAUV2_inst0 from WrapAsAUV2
+  - generated_entrypoints.hxx generated
+  - generating generated_cocoaclasses.hxx
+    + wrapAsAUV2_inst_cocoaUI_br_com_bcstudio_bcdrums class br.com.bcstudio.bcdrums
+  - generated_cocoaclasses.hxx generated
+[ 75%] Built target bcdrums_auv2-build-helper
+[ 79%] Building OBJCXX object CMakeFiles/bcdrums_auv2.dir/_deps/clapwrapper-src/src/detail/os/macos.mm.o
+[ 82%] Building CXX object CMakeFiles/bcdrums_auv2.dir/_deps/clapwrapper-src/src/wrapasauv2.cpp.o
+[ 86%] Building OBJCXX object CMakeFiles/bcdrums_auv2.dir/_deps/clapwrapper-src/src/detail/auv2/auv2_shared.mm.o
+[ 89%] Building CXX object CMakeFiles/bcdrums_auv2.dir/_deps/clapwrapper-src/src/detail/auv2/process.cpp.o
+[ 93%] Building OBJCXX object CMakeFiles/bcdrums_auv2.dir/_deps/clapwrapper-src/src/detail/auv2/wrappedview.mm.o
+[ 96%] Building CXX object CMakeFiles/bcdrums_auv2.dir/_deps/clapwrapper-src/src/detail/auv2/parameter.cpp.o
+[100%] Linking CXX CFBundle shared module "BC Drums.component/Contents/MacOS/BC Drums"
+Installing /Users/runner/work/hero-godot/hero-godot/target/bundled/BC Drums.clap in BC Drums.component/Contents/PlugIns/BC Drums.clap
+[100%] Built target bcdrums_auv2

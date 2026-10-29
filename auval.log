@@ -1,0 +1,163 @@
+
+    AU Validation Tool
+    Version: 1.10.0 
+    Copyright 2003-2019, Apple Inc. All Rights Reserved.
+    Specify -h (-help) for command options
+
+--------------------------------------------------
+VALIDATING AUDIO UNIT: 'aufx' - 'BcDr' - 'BCst'
+--------------------------------------------------
+Manufacturer String: BC Studio
+AudioUnit Name: BC Drums
+Component Version: 0.1.0 (0x100)
+
+* * PASS
+--------------------------------------------------
+TESTING OPEN TIMES:
+COLD:
+[clap-wrapper] auv2 loaded clap from /Users/runner/Library/Audio/Plug-Ins/Components/BC Drums.component/Contents/PlugIns
+[clap-wrapper] auv2: Initialized 'br.com.bcstudio.bcdrums' / 'BC Drums' / '0.1.0'
+Time to open AudioUnit:         9.487 ms
+WARM:
+[clap-wrapper] auv2: Initialized 'br.com.bcstudio.bcdrums' / 'BC Drums' / '0.1.0'
+Time to open AudioUnit:         0.291  ms
+This AudioUnit is a version 2 implementation.
+FIRST TIME:
+Time for initialization:        0.008 ms
+
+* * PASS
+--------------------------------------------------
+VERIFYING DEFAULT SCOPE FORMATS:
+Input Scope Bus Configuration:
+ Default Bus Count:1
+    Bus Name: Input
+    Default Format: AudioStreamBasicDescription:  2 ch,  44100 Hz, Float32, deinterleaved
+
+Output Scope Bus Configuration:
+ Default Bus Count:1
+    Bus Name: Output
+    Default Format: AudioStreamBasicDescription:  2 ch,  44100 Hz, Float32, deinterleaved
+
+* * PASS
+--------------------------------------------------
+VERIFYING REQUIRED PROPERTIES:
+
+* * PASS
+--------------------------------------------------
+VERIFYING RECOMMENDED PROPERTIES:
+  VERIFYING PROPERTY: Latency
+    PASS
+  VERIFYING PROPERTY: Tail Time
+WARNING: Recommended Property is not supported
+
+  VERIFYING PROPERTY: Bypass Effect
+WARNING: Recommended Property is not supported
+
+
+* * PASS
+--------------------------------------------------
+VERIFYING OPTIONAL PROPERTIES:
+
+* * PASS
+--------------------------------------------------
+VERIFYING SPECIAL PROPERTIES:
+
+VERIFYING CUSTOM UI
+Cocoa Views Available: 1
+  wrapAsAUV2_inst_cocoaUI_br_com_bcstudio_bcdrums
+    PASS
+
+VERIFYING CLASS INFO
+WARNING: Preset name is not retained in retrieved class data
+    PASS
+
+TESTING HOST CALLBACKS
+    PASS
+
+* * PASS
+--------------------------------------------------
+PUBLISHED PARAMETER INFO:
+
+# # # 4 Global Scope Parameters:
+Parameter ID:108124
+Name: Mix
+Parameter Type: Generic
+Values: Minimum = 0.0 %, Default = 100.0 %, Maximum = 100.0 %
+Flags: Values Have Strings, High Resolution, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:109780401
+Name: Estilo
+Parameter Type: Indexed
+Values: Minimum = Natural, Default = Natural, Maximum = Estilo 32
+Flags: Values Have Strings, High Resolution, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:1052746378
+Name: Transient Design
+Parameter Type: Generic
+Values: Minimum = 0.0 %, Default = 65.0 %, Maximum = 100.0 %
+Flags: Values Have Strings, High Resolution, Readable, Writable 
+  -parameter PASS
+
+Parameter ID:1141971201
+Name: Saída
+Parameter Type: Generic
+Values: Minimum = -18.0 dB, Default = 0.0 dB, Maximum = 12.0 dB
+Flags: Values Have Strings, High Resolution, Readable, Writable 
+  -parameter PASS
+
+Testing that parameters retain value across reset and initialization
+  PASS
+
+* * PASS
+--------------------------------------------------
+FORMAT TESTS:
+
+Reported Channel Capabilities (explicit):
+      [2, 2]  
+
+Input/Output Channel Handling:
+1-1   1-2   1-4   1-5   1-6   1-7   1-8   2-2   2-4   2-5   2-6   2-7   2-8   4-4   4-5   5-5   6-6   7-7   8-8
+                                          X                                                                       
+
+* * PASS
+--------------------------------------------------
+RENDER TESTS:
+
+Input Format: AudioStreamBasicDescription:  2 ch,  44100 Hz, Float32, deinterleaved
+Output Format: AudioStreamBasicDescription:  2 ch,  44100 Hz, Float32, deinterleaved
+Render Test at 512 frames
+Slicing Render Test at 64 frames
+  PASS
+
+
+Render Test at 64 frames, sample rate: 22050 Hz
+Render Test at 137 frames, sample rate: 96000 Hz
+Render Test at 4096 frames, sample rate: 48000 Hz
+Render Test at 4096 frames, sample rate: 192000 Hz
+Render Test at 4096 frames, sample rate: 11025 Hz
+Render Test at 512 frames, sample rate: 44100 Hz
+  PASS
+
+Checking connection semantics:
+Connection format:
+AudioStreamBasicDescription:  2 ch,  44100 Hz, Float32, deinterleaved
+  PASS
+
+Bad Max Frames - Render should fail
+  PASS
+
+Checking parameter setting
+Using AudioUnitSetParameter
+Using AudioUnitScheduleParameter
+  PASS
+
+Test MIDI
+WARNING: AU implements MusicDeviceMIDIEvent but is of type 'aufx' (it should be 'aumf')
+  PASS
+
+* * PASS
+--------------------------------------------------
+AU VALIDATION SUCCEEDED.
+--------------------------------------------------
