@@ -94,6 +94,8 @@ pub struct Detector {
     max_decay_db: f32,
     now: u64,
     pub last_features: Features,
+    /// último ataque analisado (com ou sem classificação), para a análise da música inteira
+    pub completed: Option<(u64, Features)>,
 }
 
 impl Detector {
@@ -125,6 +127,7 @@ impl Detector {
             max_decay_db: 3.0 / sr, // 3 dB por segundo
             now: 0,
             last_features: Features::default(),
+            completed: None,
             settings,
         }
     }
@@ -196,6 +199,7 @@ impl Detector {
                 let done = Pending { time: p.time, f: p.f, last_sign: false, first_cross: 0, last_cross: 0, crosses: 0 };
                 self.pending = None;
                 self.last_features = done.f;
+                self.completed = Some((done.time, done.f));
                 let growth = done.f.low_tail / done.f.low.max(1e-12);
                 let piece = classify(&done.f).map(|p| self.refine_tom(p, done.f.pitch_hz, growth));
                 // muito abaixo das batidas principais (vazamento, prato): ignora
@@ -296,4 +300,143 @@ pub fn classify(f: &Features) -> Option<Piece> {
         return Some(Piece::TomHi);
     }
     None
+}
+
+/// Análise da música inteira (modo offline do app).
+///
+/// 1. acha todos os ataques e mede cada um;
+/// 2. classifica pelas regras gerais (semente);
+/// 3. aprende o "perfil" de cada peça *desta* gravação (média e dispersão
+///    das medidas) e reclassifica cada ataque pelo perfil mais próximo;
+/// 4. ataques que não se parecem com nenhum perfil ficam sem reforço.
+///
+/// O resultado adapta-se ao kit, à afinação e à captação de cada música.
+pub fn analyze_song(mono: &[f32], sr: f32) -> Vec<Hit> {
+    let mut d = Detector::new(sr);
+    let mut onsets: Vec<(u64, Features)> = Vec::new();
+    for &x in mono.iter().chain(std::iter::repeat_n(&0.0, (0.1 * sr) as usize)) {
+        d.process(x);
+        if let Some(o) = d.completed.take() {
+            onsets.push(o);
+        }
+    }
+    if onsets.is_empty() {
+        return Vec::new();
+    }
+    // nível: ignora vazamentos muito abaixo das batidas principais da música
+    let mut peaks: Vec<f32> = onsets.iter().map(|o| o.1.peak_db).collect();
+    peaks.sort_by(|a, b| a.total_cmp(b));
+    let loud = peaks[(peaks.len() as f32 * 0.9) as usize % peaks.len()];
+
+    let vec_of = |f: &Features| -> [f32; 6] {
+        let t = f.total();
+        let l = |v: f32| (v.max(1e-9)).ln();
+        [
+            l(f.low / t),
+            l(f.low_mid / t),
+            l(f.mid / t),
+            l(f.high / t),
+            l(f.low_tail / f.low.max(1e-12)).clamp(-4.0, 4.0),
+            if f.pitch_hz > 0.0 { (f.pitch_hz.max(30.0)).ln() } else { 4.6 },
+        ]
+    };
+    let feats: Vec<[f32; 6]> = onsets.iter().map(|o| vec_of(&o.1)).collect();
+    // semente: regras gerais (0..3 peças, 4 = nada)
+    let mut label: Vec<usize> = onsets
+        .iter()
+        .map(|o| {
+            let growth = o.1.low_tail / o.1.low.max(1e-12);
+            match classify(&o.1) {
+                Some(Piece::TomHi | Piece::TomLo) if growth > 1.5 => Piece::TomLo.index(),
+                Some(p) => p.index(),
+                None => 4,
+            }
+        })
+        .collect();
+
+    for _ in 0..6 {
+        // perfis (média e desvio por dimensão) das classes com exemplos suficientes
+        let mut prof: Vec<Option<([f32; 6], [f32; 6])>> = vec![None; 5];
+        for (c, pc) in prof.iter_mut().enumerate() {
+            let idx: Vec<usize> = (0..label.len()).filter(|&i| label[i] == c).collect();
+            if idx.len() < 3 {
+                continue;
+            }
+            let mut m = [0.0f32; 6];
+            for &i in &idx {
+                for k in 0..6 {
+                    m[k] += feats[i][k] / idx.len() as f32;
+                }
+            }
+            let mut sd = [0.0f32; 6];
+            for &i in &idx {
+                for k in 0..6 {
+                    sd[k] += (feats[i][k] - m[k]).powi(2) / idx.len() as f32;
+                }
+            }
+            for v in sd.iter_mut() {
+                *v = v.sqrt().max(0.25);
+            }
+            *pc = Some((m, sd));
+        }
+        let mut changed = false;
+        for i in 0..label.len() {
+            let mut best = (f32::MAX, label[i]);
+            for (c, pc) in prof.iter().enumerate() {
+                if let Some((m, sd)) = pc {
+                    let dist: f32 = (0..6).map(|k| ((feats[i][k] - m[k]) / sd[k]).powi(2)).sum::<f32>() / 6.0;
+                    if dist < best.0 {
+                        best = (dist, c);
+                    }
+                }
+            }
+            // longe de todos os perfis: sem reforço (evita erro)
+            let new = if best.0 > 5.0 { 4 } else { best.1 };
+            if new != label[i] {
+                label[i] = new;
+                changed = true;
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+
+    // separa tom agudo/grave pela afinação dentro dos tons da música
+    let tom_pitches: Vec<f32> = (0..label.len())
+        .filter(|&i| (label[i] == Piece::TomHi.index() || label[i] == Piece::TomLo.index()) && onsets[i].1.pitch_hz > 0.0)
+        .map(|i| onsets[i].1.pitch_hz)
+        .collect();
+    if tom_pitches.len() >= 4 {
+        let lo = tom_pitches.iter().copied().fold(f32::MAX, f32::min);
+        let hi = tom_pitches.iter().copied().fold(0.0, f32::max);
+        if hi / lo > 1.15 {
+            let split = (lo * hi).sqrt();
+            for i in 0..label.len() {
+                if label[i] == Piece::TomHi.index() || label[i] == Piece::TomLo.index() {
+                    let growth = onsets[i].1.low_tail / onsets[i].1.low.max(1e-12);
+                    let p = onsets[i].1.pitch_hz;
+                    label[i] = if growth > 1.5 || (p > 0.0 && p < split) { Piece::TomLo.index() } else { Piece::TomHi.index() };
+                }
+            }
+        }
+    }
+
+    // força relativa ao pico típico de cada peça na música
+    let mut ref_db = [-60.0f32; 4];
+    for (c, r) in ref_db.iter_mut().enumerate() {
+        let mut v: Vec<f32> = (0..label.len()).filter(|&i| label[i] == c).map(|i| onsets[i].1.peak_db).collect();
+        if !v.is_empty() {
+            v.sort_by(|a, b| a.total_cmp(b));
+            *r = v[((v.len() as f32 * 0.9) as usize).min(v.len() - 1)];
+        }
+    }
+    (0..label.len())
+        .filter(|&i| label[i] < 4 && onsets[i].1.peak_db > loud - 26.0)
+        .filter_map(|i| {
+            let piece = Piece::ALL.get(label[i]).copied()?;
+            let rel = onsets[i].1.peak_db - ref_db[label[i]];
+            Some(Hit { time: onsets[i].0, piece, velocity: (1.0 + rel / 20.0).clamp(0.05, 1.0) })
+        })
+        .collect()
 }

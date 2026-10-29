@@ -15,3 +15,4 @@ hound.workspace = true
 bcd-ui.workspace = true
 eframe = "0.31"
 rfd = "0.15"
+cpal = "0.15"

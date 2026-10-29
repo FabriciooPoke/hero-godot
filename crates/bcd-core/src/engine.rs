@@ -158,6 +158,8 @@ pub struct Engine {
     meters: Arc<Meters>,
     in_env: Envelope,
     out_env: Envelope,
+    /// batidas já analisadas (modo offline); quando presente, o detector em tempo real é ignorado
+    preset_hits: bool,
 }
 
 impl Engine {
@@ -180,6 +182,7 @@ impl Engine {
             meters: Arc::new(Meters::default()),
             in_env: Envelope::new(sr, 30.0, 300.0),
             out_env: Envelope::new(sr, 30.0, 300.0),
+            preset_hits: false,
         }
     }
 
@@ -206,6 +209,14 @@ impl Engine {
         self.voices.clear();
         self.current_style = usize::MAX;
         std::mem::replace(&mut self.prepared, prepared)
+    }
+
+    /// Usa batidas já analisadas (ex.: [`crate::detect::analyze_song`]) em vez
+    /// do detector em tempo real. Tempos em amostras desde o início do áudio.
+    pub fn set_hits(&mut self, mut hits: Vec<Hit>) {
+        hits.sort_by_key(|h| h.time);
+        self.pending = hits.into();
+        self.preset_hits = true;
     }
 
     pub fn reset(&mut self) {
@@ -259,9 +270,11 @@ impl Engine {
             let (l, r) = (left[i], right[i]);
             in_peak = in_peak.max(self.in_env.process(l.abs().max(r.abs())));
 
-            if let Some(hit) = self.detector.process(0.5 * (l + r)) {
-                self.pending.push_back(hit);
-                self.meters.push_hit(&hit);
+            if !self.preset_hits {
+                if let Some(hit) = self.detector.process(0.5 * (l + r)) {
+                    self.pending.push_back(hit);
+                    self.meters.push_hit(&hit);
+                }
             }
 
             // linha de atraso

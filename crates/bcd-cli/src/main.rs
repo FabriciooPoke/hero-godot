@@ -59,6 +59,16 @@ fn run() -> Result<(), String> {
             eprintln!("({onsets} ataques ignorados)");
             Ok(())
         }
+        "analisar-musica" => {
+            let input = args.get(2).ok_or("informe o arquivo")?;
+            let (frames, sr) = pack::read_wav(input.as_ref()).map_err(|e| e.to_string())?;
+            let mono: Vec<f32> = frames.iter().map(|f| 0.5 * (f[0] + f[1])).collect();
+            println!("tempo_s,peca,velocity");
+            for h in analyze_song(&mono, sr as f32) {
+                println!("{:.4},{},{:.2}", h.time as f32 / sr as f32, h.piece.key(), h.velocity);
+            }
+            Ok(())
+        }
         "packs" => {
             let lib = scan_library(&packs_dir, 48_000);
             println!("Pasta: {}", packs_dir.display());

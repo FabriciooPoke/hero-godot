@@ -182,9 +182,9 @@ fn vu_angle(vu_db: f32) -> f32 {
     50.0
 }
 
-/// Balística de VU (~300 ms). `peak_lin`: nível de pico linear; 0 VU ≈ -14 dBFS.
+/// Balística de VU (~300 ms). `peak_lin`: nível linear (pico suavizado); 0 VU ≈ -7 dBFS.
 pub fn vu_ballistics(needle_vu_db: &mut f32, peak_lin: f32) {
-    let target = 20.0 * peak_lin.max(1e-6).log10() + 14.0;
+    let target = 20.0 * peak_lin.max(1e-6).log10() + 7.0;
     *needle_vu_db += (target - *needle_vu_db) * 0.18;
 }
 
