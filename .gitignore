@@ -1,0 +1,7 @@
+target/
+.DS_Store
+*.wav
+!packs/**/*.wav
+
+# samples ficam fora do repositório público
+packs/

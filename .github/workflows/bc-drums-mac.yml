@@ -1,0 +1,102 @@
+name: BC Drums — Instalador Mac
+on:
+  push:
+    branches: [bc-drums, main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mac:
+    runs-on: macos-14
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Clippy e testes
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo clippy --workspace --exclude xtask --all-targets -- -D warnings 2>&1 | tee -a ci.log
+          cargo test --workspace --exclude xtask 2>&1 | tee -a ci.log
+
+      - name: Plugin universal (VST3 + CLAP)
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo xtask bundle-universal bcd-plugin --release 2>&1 | tee -a ci.log
+
+      - name: App e utilitário (universal)
+        run: |
+          for t in aarch64-apple-darwin x86_64-apple-darwin; do
+            cargo build --release -p bcd-app -p bcd-cli --target $t
+          done
+          mkdir -p "dist/BC Drums.app/Contents/MacOS"
+          lipo -create -output "dist/BC Drums.app/Contents/MacOS/bcdrums-app" \
+            target/aarch64-apple-darwin/release/bcdrums-app target/x86_64-apple-darwin/release/bcdrums-app
+          lipo -create -output dist/bcdrums \
+            target/aarch64-apple-darwin/release/bcdrums target/x86_64-apple-darwin/release/bcdrums
+          cp packaging/macos/app-Info.plist "dist/BC Drums.app/Contents/Info.plist"
+
+      - name: AU (clap-wrapper)
+        id: au
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          cmake -S packaging/au -B build-au -DCMAKE_BUILD_TYPE=Release -DBCD_CLAP="$PWD/target/bundled/BC Drums.clap" 2>&1 | tee au.log
+          cmake --build build-au --config Release 2>&1 | tee -a au.log
+          C=$(find build-au -name "BC Drums.component" -type d | head -1)
+          cp -R "$C" dist/
+
+      - name: Validar AU
+        if: steps.au.outcome == 'success'
+        continue-on-error: true
+        run: |
+          mkdir -p ~/Library/Audio/Plug-Ins/Components
+          cp -R "dist/BC Drums.component" ~/Library/Audio/Plug-Ins/Components/
+          killall -9 AudioComponentRegistrar || true
+          sleep 3
+          auval -v aufx BcDr BCst 2>&1 | tee auval.log | tail -40
+
+      - name: Montar pacote
+        run: |
+          cp -R "target/bundled/BC Drums.vst3" "target/bundled/BC Drums.clap" dist/
+          if [ -d packs ]; then cp -R packs dist/Packs; else mkdir -p dist/Packs; fi
+          cp packaging/macos/instalar.command dist/
+          for b in dist/*.vst3 dist/*.clap dist/*.component dist/*.app; do
+            [ -e "$b" ] && codesign --force --deep -s - "$b"
+          done
+          codesign --force -s - dist/bcdrums
+          ls -la dist
+          cd dist && zip -qry ../bc-drums-mac.zip .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bc-drums-mac
+          path: bc-drums-mac.zip
+
+      - name: Publicar no branch bc-drums-instalador
+        run: |
+          mkdir pub && cp bc-drums-mac.zip pub/ && cd pub
+          echo "Build ${GITHUB_SHA} — $(date -u +%FT%TZ) — AU: ${{ steps.au.outcome }}" > LEIA.txt
+          cp ../au.log ../auval.log . 2>/dev/null || true
+          git init -q -b bc-drums-instalador
+          git config user.name "BC Drums CI"; git config user.email "ci@bcstudio"
+          git add . && git commit -qm "instalador ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" bc-drums-instalador
+
+      - name: Publicar log de erro
+        if: failure()
+        run: |
+          mkdir logpub && cp ci.log au.log logpub/ 2>/dev/null || true
+          cd logpub && echo "${GITHUB_SHA}" > SHA.txt
+          git init -q -b bc-drums-logs
+          git config user.name "BC Drums CI"; git config user.email "ci@bcstudio"
+          git add . && git commit -qm "log ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" bc-drums-logs

@@ -1,0 +1,20 @@
+[workspace]
+resolver = "2"
+members = ["crates/bcd-core", "crates/bcd-cli", "crates/bcd-plugin", "crates/bcd-app", "crates/bcd-ui", "xtask"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Fabricio <fabricio.bcstudio@gmail.com>"]
+license = "Proprietary"
+
+[workspace.dependencies]
+bcd-core = { path = "crates/bcd-core" }
+bcd-ui = { path = "crates/bcd-ui" }
+hound = "3.5"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

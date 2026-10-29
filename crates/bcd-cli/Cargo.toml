@@ -1,0 +1,13 @@
+[package]
+name = "bcd-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "bcdrums"
+path = "src/main.rs"
+
+[dependencies]
+bcd-core.workspace = true
+hound.workspace = true

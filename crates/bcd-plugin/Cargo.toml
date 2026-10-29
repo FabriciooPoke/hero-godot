@@ -1,0 +1,15 @@
+[package]
+name = "bcd-plugin"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "BC Drums — plugin (VST3/CLAP; AU via clap-wrapper)"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+bcd-core.workspace = true
+bcd-ui.workspace = true
+nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git" }
+nih_plug_egui = { git = "https://github.com/robbert-vdh/nih-plug.git" }

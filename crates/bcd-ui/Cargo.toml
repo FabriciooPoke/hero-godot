@@ -1,0 +1,10 @@
+[package]
+name = "bcd-ui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Desenho da interface analógica do BC Drums (compartilhado por plugin e app)"
+
+[dependencies]
+bcd-core.workspace = true
+egui = "0.31"
